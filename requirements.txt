@@ -1,0 +1,23 @@
+# ── AI News Search — Dependencies ──
+# Python 3.9+ required
+
+# RSS crawling & article extraction
+feedparser>=6.0.10
+newspaper3k>=0.2.8
+
+# NLP / ML
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+transformers>=4.30.0
+torch>=2.0.0
+
+# Data handling
+pandas>=2.0.0
+
+# UI
+streamlit>=1.28.0
+
+# Utilities
+python-dateutil>=2.8.2
+tqdm>=4.65.0
+lxml_html_clean>=0.1.0
