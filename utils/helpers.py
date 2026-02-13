@@ -65,7 +65,7 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def hours_since(dt: datetime) -> float:
+def hours_since(dt: datetime | None) -> float:
     """Hours elapsed since *dt*. Returns a large number if dt is None/NaT."""
     if dt is None or pd.isna(dt):
         return 9999.0

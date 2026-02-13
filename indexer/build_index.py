@@ -139,7 +139,6 @@ def build_and_save_index(articles: list[dict]) -> tuple[faiss.IndexFlatIP, np.nd
 
 if __name__ == "__main__":
     """Load filtered articles from disk, build index, save, print stats."""
-
     articles = load_articles_json(ARTICLES_PATH)
     if not articles:
         logger.warning(f"No articles at {ARTICLES_PATH}. Run crawler + filter first.")
@@ -150,11 +149,11 @@ if __name__ == "__main__":
 
     # Quick sanity check: search for "AI" and show top 3
     model = load_embedding_model()
-    query_vec = model.encode(["latest openclaw news"], convert_to_numpy=True).astype(np.float32)
+    query_vec = model.encode(["latest artificial intelligence news"], convert_to_numpy=True).astype(np.float32)
     faiss.normalize_L2(query_vec)
     scores, indices = index.search(query_vec, 3)
 
-    print("\n── Sanity check: top 3 for 'latest AI news' ────────")
+    print("\n── Sanity check: top 3 for 'latest artificial intelligence news' ────────")
     for rank, (score, idx) in enumerate(zip(scores[0], indices[0]), 1):
         a = articles[idx]
         print(f"  #{rank}  sim={score:.4f}  {a['title']}")
