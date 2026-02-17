@@ -19,18 +19,38 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.npy"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # RSS Feeds 
-# Curated list of feeds that consistently publish AI/tech content.
+# Master list of RSS feeds for AI News Aggregation
 RSS_FEEDS = [
-    # General tech with strong AI coverage
+    # PRIMARY RESEARCH LABS 
+    "https://openai.com/news/rss.xml",                # OpenAI
+    "https://deepmind.google/blog/rss.xml",           # Google DeepMind
+    "https://www.microsoft.com/en-us/research/feed/", # Microsoft Research
+    "https://ai.meta.com/blog/rss.xml",               # Meta AI (Facebook)
+    "https://developer.nvidia.com/blog/feed",         # NVIDIA (Hardware/Software)
+    "https://aws.amazon.com/blogs/machine-learning/feed/", # AWS ML
+    "https://bair.berkeley.edu/blog/feed.xml",        # Berkeley AI Research (Academic)
+    "https://research.google/blog/rss",               # Google Research (Broader than DeepMind)
+
+    # DEVELOPER & OPEN SOURCE 
+    "https://huggingface.co/blog/feed.xml",           # Hugging Face (The Hub)
+    "https://pytorch.org/feed.xml",                   # PyTorch
+    "https://blog.langchain.dev/rss/",                # LangChain (Agents/Engineering)
+    "https://stackdiary.com/feed/",                   # Engineering focused
+    
+    # HIGH-SIGNAL AI NEWSLETTERS 
+    "https://lastweekin.ai/feed",                     # Last Week in AI
+    "https://jack-clark.net/feed/",                   # Import AI (Policy/Safety)
+    "https://thesequence.substack.com/feed",          # The Sequence (Technical)
+    "https://www.interconnects.ai/feed",              # Interconnects (Model Strategy)
+
+    # GENERAL TECH (Mainstream Coverage)
     "https://feeds.bbci.co.uk/news/technology/rss.xml",
     "https://techcrunch.com/category/artificial-intelligence/feed/",
     "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
     "https://feeds.arstechnica.com/arstechnica/technology-lab",
-    # AI-specific outlets
     "https://news.mit.edu/topic/mitartificial-intelligence2-rss.xml",
     "https://www.marktechpost.com/feed/",
     "https://venturebeat.com/category/ai/feed/",
-    # Broader tech (will be filtered by AI keywords)
     "https://www.wired.com/feed/tag/ai/latest/rss",
     "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
 ]
@@ -48,7 +68,9 @@ AI_KEYWORDS = [
     "stable diffusion", "midjourney", "hugging face",
     "foundation model", "fine-tuning", "rag", "retrieval augmented",
     "prompt engineering", "multimodal", "ai chip", "nvidia",
-    "speech recognition", "text-to-image", "ai startup",
+    "speech recognition", "text-to-image", "ai startup", "ai research",
+    "ai breakthrough", "ai innovation", "ai application", "openclaw", 
+    "moltbook", "deepseek", "ai news", "ai trends", "ai development",
 ]
 
 # Embedding Model 

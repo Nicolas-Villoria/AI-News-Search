@@ -18,7 +18,7 @@ from config.settings import (
     FAISS_INDEX_PATH,
     EMBEDDINGS_PATH,
 )
-from utils.helpers import get_logger, load_articles_json
+from utils.helpers import get_logger, load_articles_json, save_articles_json
 
 logger = get_logger(__name__)
 
@@ -132,6 +132,7 @@ def build_and_save_index(articles: list[dict]) -> tuple[faiss.IndexFlatIP, np.nd
     embeddings = embed_articles(articles, model)
     index = build_faiss_index(embeddings)
     save_index(index, embeddings)
+    save_articles_json(articles, ARTICLES_PATH)
     return index, embeddings
 
 
