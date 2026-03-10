@@ -1,0 +1,83 @@
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--topbar-height);
+    padding: 0 var(--space-lg);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+}
+
+.left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.brand {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+.version {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.center {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.tickerLabel {
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 13px;
+}
+
+.companyName {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.price {
+    font-weight: 600;
+    color: var(--text-white);
+    font-size: 14px;
+}
+
+.change {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+}
+
+.marketStatus {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.open {
+    color: var(--positive);
+}
+
+.closed {
+    color: var(--negative);
+}
+
+.clock {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
