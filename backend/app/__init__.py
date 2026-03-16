@@ -1,1 +1,0 @@
-# Hawker — Financial Intelligence Platform
