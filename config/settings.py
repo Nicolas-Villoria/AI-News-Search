@@ -103,3 +103,4 @@ TIME_DECAY_HALF_LIFE_HOURS = 48
 # General 
 MAX_ARTICLES_DISPLAY = 30      # Cap for the Streamlit UI
 CRAWL_TIMEOUT_SECONDS = 15     # Per-feed HTTP timeout
+MAX_ARTICLE_AGE_DAYS = 7       # Keep only articles from the last N days (None to disable)

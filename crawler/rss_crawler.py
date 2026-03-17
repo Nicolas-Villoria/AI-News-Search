@@ -6,19 +6,29 @@ using newspaper3k, deduplicates by URL, and returns clean article dicts.
 
 """
 
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+import os
 
 import feedparser
 from dateutil import parser as dateutil_parser
-from newspaper import Article
+from newspaper import Article, Config
 
-from config.settings import RSS_FEEDS, CRAWL_TIMEOUT_SECONDS, ARTICLES_PATH
+from config.settings import (
+    RSS_FEEDS,
+    CRAWL_TIMEOUT_SECONDS,
+    ARTICLES_PATH,
+    MAX_ARTICLE_AGE_DAYS,
+)
 from utils.helpers import get_logger, save_articles_json
 
 logger = get_logger(__name__)
 
 # Minimum article length (chars) to keep.
 MIN_TEXT_LENGTH = 100
+MAX_EXTRACTION_WORKERS = 8
 
 
 # Single-article helpers 
@@ -57,12 +67,30 @@ def _parse_published(entry) -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _is_within_days(published_iso: str, max_age_days: int) -> bool:
+    """Return True when a publish date is within the requested age window."""
+    try:
+        published_dt = dateutil_parser.parse(published_iso)
+    except Exception:
+        return False
+
+    if published_dt.tzinfo is None:
+        published_dt = published_dt.replace(tzinfo=timezone.utc)
+
+    age = datetime.now(timezone.utc) - published_dt.astimezone(timezone.utc)
+    return age.days <= max_age_days
+
+
 def extract_full_text(url: str) -> str:
     """
     Download and parse an article URL to extract the body text using newspaper3k.
     """
     try:
-        article = Article(url)
+        config = Config()
+        config.request_timeout = CRAWL_TIMEOUT_SECONDS
+        config.fetch_images = False
+
+        article = Article(url, config=config)
         article.download()
         article.parse()
         return article.text.strip()
@@ -111,7 +139,7 @@ def fetch_feed(feed_url: str) -> list[dict]:
 
 # Main crawler 
 
-def crawl_all_feeds(feeds: list[str] | None = None) -> list[dict]:
+def crawl_all_feeds(max_age_days: int | None = None) -> list[dict]:
     """Crawl all configured RSS feeds and return deduplicated articles.
 
     Pipeline:
@@ -121,18 +149,18 @@ def crawl_all_feeds(feeds: list[str] | None = None) -> list[dict]:
         4. Drop articles with insufficient text
 
     Args:
-        feeds: Override the default feed list (useful for testing).
+        max_age_days: Keep only articles from the last N days.
+            Example: 7 keeps only the last week. If None, no date filter.
 
     Returns:
         List of article dicts ready for filtering / indexing.
         Keys: title, link, published, source, text
     """
-    feeds = feeds or RSS_FEEDS
-    logger.info(f"Crawling {len(feeds)} RSS feeds …")
+    logger.info(f"Crawling {len(RSS_FEEDS)} RSS feeds ...")
 
     # Gather all entries
     raw_articles = []
-    for url in feeds:
+    for url in RSS_FEEDS:
         raw_articles.extend(fetch_feed(url))
 
     logger.info(f"Raw entries collected: {len(raw_articles)}")
@@ -150,29 +178,49 @@ def crawl_all_feeds(feeds: list[str] | None = None) -> list[dict]:
         f"(removed {len(raw_articles) - len(unique_articles)} duplicates)"
     )
 
+    # Drop articles older than max_age_days before expensive page extraction.
+    if max_age_days is not None:
+        recent_articles = [
+            a for a in unique_articles if _is_within_days(a.get("published", ""), max_age_days)
+        ]
+        unique_articles = recent_articles
+
     # Extract full text
-    logger.info("Extracting full article text (this may take a minute) …")
-    for i, article in enumerate(unique_articles, 1):
-        article["text"] = extract_full_text(article["link"])
-        if i % 10 == 0 or i == len(unique_articles):
-            logger.info(f"  Extracted {i}/{len(unique_articles)}")
+    logger.info("Extracting full article text (this may take a minute)")
+    with ThreadPoolExecutor(max_workers=MAX_EXTRACTION_WORKERS) as executor:
+        extracted_texts = list(executor.map(
+            extract_full_text,
+            [article["link"] for article in unique_articles],
+        ))
+
+    for article, text in zip(unique_articles, extracted_texts):
+        article["text"] = text
 
     # Drop articles with insufficient text
     full_articles = [
         a for a in unique_articles if len(a.get("text", "")) >= MIN_TEXT_LENGTH
     ]
-    dropped = len(unique_articles) - len(full_articles)
     logger.info(
-        f"Final article count: {len(full_articles)} "
-        f"(dropped {dropped} with text < {MIN_TEXT_LENGTH} chars)"
+        f"Final article count: {len(full_articles)}"
     )
 
     return full_articles
 
 
 if __name__ == "__main__":
-    """Quick test: crawl all feeds, save to data/articles.json, print stats."""
-    articles = crawl_all_feeds()
+    """Run the full crawler pipeline and save results to JSON."""
+    # Ask if user wants to delete existing articles file before crawling
+    if os.path.exists(ARTICLES_PATH):
+        response = input(
+            f"An articles file already exists at {ARTICLES_PATH}. "
+            "Do you want to delete it before crawling? (y/n): "
+        ).strip().lower()
+        if response == "y":
+            os.remove(ARTICLES_PATH)
+            logger.info(f"Deleted existing file at {ARTICLES_PATH}")
+        else:
+            logger.info("Keeping existing file. New articles will be added to it.")
+    articles = crawl_all_feeds(max_age_days=MAX_ARTICLE_AGE_DAYS)
 
     if articles:
         save_articles_json(articles, ARTICLES_PATH)

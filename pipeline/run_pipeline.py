@@ -9,7 +9,7 @@ import time
 from crawler.rss_crawler import crawl_all_feeds
 from filter.ai_filter import filter_articles
 from indexer.build_index import build_and_save_index
-from config.settings import ARTICLES_PATH
+from config.settings import ARTICLES_PATH, MAX_ARTICLE_AGE_DAYS
 from utils.helpers import get_logger, save_articles_json
 
 logger = get_logger(__name__)
@@ -25,7 +25,7 @@ def run_pipeline() -> list[dict]:
 
     #  Step 1: Crawl 
 
-    raw_articles = crawl_all_feeds()
+    raw_articles = crawl_all_feeds(max_age_days=MAX_ARTICLE_AGE_DAYS)
     logger.info(f"Crawled {len(raw_articles)} articles\n")
 
     if not raw_articles:
