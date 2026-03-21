@@ -11,6 +11,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import os
+import time
 
 import feedparser
 from dateutil import parser as dateutil_parser
@@ -101,28 +102,37 @@ def extract_full_text(url: str) -> str:
 
 # Per-feed crawler 
 
-def fetch_feed(feed_url: str) -> list[dict]:
-    """Parse a single RSS feed and return raw article dicts.
+def fetch_feed(feed_url: str) -> tuple[list[dict], dict]:
+    """Parse a single RSS feed and return raw article dicts + feed stats.
 
     Each dict contains: title, link, published (ISO string), source.
     Text is NOT extracted here — that's a separate step so we can
     skip duplicates before doing expensive HTTP requests.
+
+    Returns:
+        (articles, stats) where stats has keys:
+            source, url, article_count, status, elapsed_seconds, error
     """
+    t0 = time.time()
+    stats = {"url": feed_url, "source": feed_url, "article_count": 0,
+             "status": "success", "elapsed_seconds": 0.0, "error": None}
+
     try:
         feed = feedparser.parse(feed_url)
     except Exception as e:
         logger.warning(f"Failed to parse feed {feed_url}: {e}")
-        return []
+        stats.update(status="failed", error=str(e),
+                     elapsed_seconds=round(time.time() - t0, 2))
+        return [], stats
 
-    # Use the feed's own title as the source name, e.g. "TechCrunch"
     source = getattr(feed.feed, "title", feed_url)
+    stats["source"] = source
     articles = []
 
     for entry in feed.entries:
         title = getattr(entry, "title", "").strip()
         link = getattr(entry, "link", "").strip()
 
-        # Skip entries missing essential fields
         if not title or not link:
             continue
 
@@ -133,14 +143,16 @@ def fetch_feed(feed_url: str) -> list[dict]:
             "source": source,
         })
 
+    stats["article_count"] = len(articles)
+    stats["elapsed_seconds"] = round(time.time() - t0, 2)
     logger.info(f"  {source:<30s} → {len(articles)} entries")
-    return articles
+    return articles, stats
 
 
 # Main crawler 
 
-def crawl_all_feeds(max_age_days: int | None = None) -> list[dict]:
-    """Crawl all configured RSS feeds and return deduplicated articles.
+def crawl_all_feeds(max_age_days: int | None = None) -> tuple[list[dict], list[dict]]:
+    """Crawl all configured RSS feeds and return deduplicated articles + feed stats.
 
     Pipeline:
         1. Fetch entries from every RSS feed
@@ -153,15 +165,17 @@ def crawl_all_feeds(max_age_days: int | None = None) -> list[dict]:
             Example: 7 keeps only the last week. If None, no date filter.
 
     Returns:
-        List of article dicts ready for filtering / indexing.
-        Keys: title, link, published, source, text
+        (articles, feed_stats) — articles ready for filtering/indexing,
+        and per-feed stats for the health dashboard.
     """
     logger.info(f"Crawling {len(RSS_FEEDS)} RSS feeds ...")
 
-    # Gather all entries
     raw_articles = []
+    feed_stats = []
     for url in RSS_FEEDS:
-        raw_articles.extend(fetch_feed(url))
+        articles_batch, stats = fetch_feed(url)
+        raw_articles.extend(articles_batch)
+        feed_stats.append(stats)
 
     logger.info(f"Raw entries collected: {len(raw_articles)}")
 
@@ -204,7 +218,7 @@ def crawl_all_feeds(max_age_days: int | None = None) -> list[dict]:
         f"Final article count: {len(full_articles)}"
     )
 
-    return full_articles
+    return full_articles, feed_stats
 
 
 if __name__ == "__main__":
@@ -220,7 +234,7 @@ if __name__ == "__main__":
             logger.info(f"Deleted existing file at {ARTICLES_PATH}")
         else:
             logger.info("Keeping existing file. New articles will be added to it.")
-    articles = crawl_all_feeds(max_age_days=MAX_ARTICLE_AGE_DAYS)
+    articles, _feed_stats = crawl_all_feeds(max_age_days=MAX_ARTICLE_AGE_DAYS)
 
     if articles:
         save_articles_json(articles, ARTICLES_PATH)

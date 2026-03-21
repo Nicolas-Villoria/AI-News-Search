@@ -14,6 +14,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 ARTICLES_PATH = DATA_DIR / "articles.json"
 FAISS_INDEX_PATH = DATA_DIR / "faiss_index.bin"
 EMBEDDINGS_PATH = DATA_DIR / "embeddings.npy"
+PIPELINE_STATS_PATH = DATA_DIR / "pipeline_stats.json"
 
 # Ensure data directory exists on import
 DATA_DIR.mkdir(parents=True, exist_ok=True)
