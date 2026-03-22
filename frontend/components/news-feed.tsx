@@ -31,7 +31,7 @@ export function NewsFeed() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-8">
           {/* Main Content */}
           <main>
             <div className="mb-8">
@@ -84,31 +84,6 @@ export function NewsFeed() {
               </div>
             )}
           </main>
-
-          {/* Sidebar */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-24">
-              <StatusPanel />
-              
-              <div className="mt-6 rounded-xl border border-border bg-card p-5">
-                <h3 className="mb-3 text-sm font-medium text-foreground">How it works</h3>
-                <ul className="space-y-3 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">1</span>
-                    <span>Search uses semantic understanding, not just keywords</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">2</span>
-                    <span>Results are ranked by relevance, freshness, and quality</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">3</span>
-                    <span>Generate AI summaries for quick reading</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
     </div>

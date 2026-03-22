@@ -1,0 +1,62 @@
+[
+  {
+    "query": "large language models",
+    "relevant_keywords": ["large language model", "llm", "gpt", "language model", "transformer", "nemotron", "token", "inference", "chatgpt", "foundation model"],
+    "description": "Articles about LLM architectures, training, deployment, or applications"
+  },
+  {
+    "query": "AI agents and autonomous systems",
+    "relevant_keywords": ["agent", "autonomous", "agentic", "openclaw", "tool use", "multi-agent", "langchain", "workflow", "self-evolving"],
+    "description": "Articles about AI agent frameworks, orchestration, and autonomous behavior"
+  },
+  {
+    "query": "AI safety and regulation",
+    "relevant_keywords": ["safety", "regulation", "ethics", "policy", "risk", "alignment", "oversight", "responsible", "governance", "bias", "lawsuit", "trump"],
+    "description": "Articles about AI safety research, regulation policy, or ethical concerns"
+  },
+  {
+    "query": "computer vision and image generation",
+    "relevant_keywords": ["vision", "image", "video", "visual", "diffusion", "camera", "multimodal", "perception", "object detection", "generation"],
+    "description": "Articles about computer vision models, image/video generation, or visual AI"
+  },
+  {
+    "query": "robotics and physical AI",
+    "relevant_keywords": ["robot", "robotic", "physical ai", "simulation", "manipulation", "locomotion", "embodiment", "isaac", "autonomous vehicle"],
+    "description": "Articles about robotics, embodied AI, or physical simulation"
+  },
+  {
+    "query": "natural language processing and text understanding",
+    "relevant_keywords": ["nlp", "natural language", "text", "summarization", "parsing", "embedding", "semantic", "sentiment", "information retrieval", "search"],
+    "description": "Articles about NLP tasks, text processing, or language understanding"
+  },
+  {
+    "query": "AI infrastructure and GPU computing",
+    "relevant_keywords": ["gpu", "nvidia", "inference", "training", "hardware", "chip", "compute", "datacenter", "infrastructure", "blackwell", "bluefield", "dgx"],
+    "description": "Articles about AI hardware, GPU infrastructure, or compute platforms"
+  },
+  {
+    "query": "open source AI models and tools",
+    "relevant_keywords": ["open source", "hugging face", "llama", "mistral", "open model", "github", "community", "framework", "library", "release"],
+    "description": "Articles about open-source model releases, tools, or communities"
+  },
+  {
+    "query": "retrieval augmented generation RAG",
+    "relevant_keywords": ["rag", "retrieval", "augmented generation", "vector", "knowledge base", "embedding", "search", "document", "context"],
+    "description": "Articles about RAG systems, retrieval pipelines, or knowledge-grounded generation"
+  },
+  {
+    "query": "AI in enterprise and business applications",
+    "relevant_keywords": ["enterprise", "business", "production", "deploy", "customer", "platform", "saas", "workflow", "automat", "industry"],
+    "description": "Articles about AI adoption in enterprise, business use cases, or production deployment"
+  },
+  {
+    "query": "state space models and transformer alternatives",
+    "relevant_keywords": ["state space", "mamba", "ssm", "recurrent", "linear attention", "alternative", "efficient", "architecture"],
+    "description": "Articles about SSMs, Mamba, or non-transformer architectures"
+  },
+  {
+    "query": "AI research breakthroughs and new techniques",
+    "relevant_keywords": ["research", "paper", "breakthrough", "novel", "method", "technique", "benchmark", "state-of-the-art", "new approach", "uncertainty"],
+    "description": "Articles about new research results, methods, or scientific findings in AI"
+  }
+]

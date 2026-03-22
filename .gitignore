@@ -2,3 +2,16 @@
 notes.md
 __pycache__/
 *.pyc
+
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/build
+frontend/.DS_Store
+frontend/*.pem
+frontend/*.txt
+frontend/*.log
+frontend/*.json
+frontend/*.bin
+frontend/*.npy
+

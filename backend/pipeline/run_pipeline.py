@@ -27,7 +27,7 @@ def run_pipeline() -> dict:
     """
     pipeline_start = time.time()
 
-    stats = {
+    stats: dict = {
         "started_at": datetime.now(timezone.utc).isoformat(),
         "finished_at": None,
         "total_seconds": 0.0,

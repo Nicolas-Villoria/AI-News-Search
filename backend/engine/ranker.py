@@ -80,9 +80,9 @@ def search(
 
         # Composite weighted score
         relevance = (
-            w["semantic"] * semantic
-            + w["time_decay"] * time_sc
-            + w["keyword"] * keyword
+            w["semantic"] * semantic * 0.5
+            + w["time_decay"] * time_sc * 0.2
+            + w["keyword"] * keyword * 0.3
         )
 
         article["semantic_score"] = round(semantic, 4)

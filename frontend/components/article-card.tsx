@@ -69,7 +69,7 @@ export function ArticleCard({ article, index }: ArticleCardProps) {
               className="inline-flex items-start gap-2"
             >
               <span className="text-balance">{article.title}</span>
-              <ArrowUpRight className="mt-1 h-4 w-4 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+              <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
             </a>
           </h3>
 
