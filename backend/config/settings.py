@@ -56,6 +56,11 @@ RSS_FEEDS = [
     "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
 ]
 
+# Source Name Overrides
+SOURCE_NAME_OVERRIDES: dict[str, str] = {
+    "https://aws.amazon.com/blogs/machine-learning/feed/": "AWS Machine Learning Blog",
+}
+
 # AI Keyword Filter 
 # Articles must match at least one keyword (case-insensitive) to pass.
 AI_KEYWORDS = [
@@ -79,11 +84,10 @@ AI_KEYWORDS = [
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384  
 
-# Summarization Model 
-# DistilBART gives decent summaries and is much lighter than full BART.
+# Summarization (DistilBART)
 SUMMARIZER_MODEL_NAME = "sshleifer/distilbart-cnn-12-6"
-SUMMARY_MAX_LENGTH = 120
-SUMMARY_MIN_LENGTH = 30
+SUMMARY_MAX_LENGTH = 150
+SUMMARY_MIN_LENGTH = 40
 
 # Ranking Weights 
 # Final score = w_semantic * cosine_sim + w_time * time_score + w_keyword * kw_score
@@ -102,6 +106,6 @@ RANKING_WEIGHTS = {
 TIME_DECAY_HALF_LIFE_HOURS = 48
 
 # General 
-MAX_ARTICLES_DISPLAY = 30      # Cap for the Streamlit UI
+MAX_ARTICLES_DISPLAY = 30      # Cap for the UI
 CRAWL_TIMEOUT_SECONDS = 15     # Per-feed HTTP timeout
 MAX_ARTICLE_AGE_DAYS = 7       # Keep only articles from the last N days (None to disable)

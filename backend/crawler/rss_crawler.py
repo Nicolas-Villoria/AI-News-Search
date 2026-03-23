@@ -19,6 +19,7 @@ from newspaper import Article, Config
 
 from config.settings import (
     RSS_FEEDS,
+    SOURCE_NAME_OVERRIDES,
     CRAWL_TIMEOUT_SECONDS,
     ARTICLES_PATH,
     MAX_ARTICLE_AGE_DAYS,
@@ -125,7 +126,7 @@ def fetch_feed(feed_url: str) -> tuple[list[dict], dict]:
                      elapsed_seconds=round(time.time() - t0, 2))
         return [], stats
 
-    source = getattr(feed.feed, "title", feed_url)
+    source = SOURCE_NAME_OVERRIDES.get(feed_url, getattr(feed.feed, "title", feed_url))
     stats["source"] = source
     articles = []
 

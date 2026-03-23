@@ -1,9 +1,13 @@
 """
-engine/summarizer.py — AI-powered article summarization.
+engine/summarizer.py — DistilBART article summarization.
 
-Uses a Hugging Face summarization pipeline (DistilBART) to generate
-concise summaries of news articles. Summaries are computed on-demand
-and cached on the article dict so they're only generated once.
+Uses a Hugging Face DistilBART model to generate concise abstractive
+summaries of news articles.  Summaries are computed on-demand via the
+/summarize endpoint.
+
+NOTE: Requires OMP_NUM_THREADS=1 on macOS Apple Silicon to avoid a
+segfault caused by libtorch OpenMP threading + uvloop.  This is set
+in api/main.py before any torch import.
 """
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -19,17 +23,11 @@ from utils.helpers import get_logger, load_articles_json
 
 logger = get_logger(__name__)
 
-# DistilBART's maximum input is 1024 tokens (~3000 chars).
-# We truncate to stay safely within that window.
 MAX_INPUT_CHARS = 2500
 
 
-# Model loading 
-
 def load_summarizer() -> dict:
-    """
-    Load the DistilBART tokenizer and model directly.
-    """
+    """Load the DistilBART tokenizer and model."""
     logger.info(f"Loading summarization model: {SUMMARIZER_MODEL_NAME}")
     tokenizer = AutoTokenizer.from_pretrained(SUMMARIZER_MODEL_NAME)
     model = AutoModelForSeq2SeqLM.from_pretrained(SUMMARIZER_MODEL_NAME)
@@ -37,15 +35,13 @@ def load_summarizer() -> dict:
     return {"tokenizer": tokenizer, "model": model}
 
 
-# Single-article summarization 
-
 def summarize_text(text: str, summarizer: dict) -> str:
-    """Generate a concise summary of a single article's text.
+    """Generate an abstractive summary using DistilBART.
 
-    Uses DistilBART's encoder-decoder architecture directly:
-        1. Tokenize input text (truncated to model's max length)
-        2. Generate summary tokens with beam search
-        3. Decode back to a string
+    Args:
+        text:       Full article body text.
+        summarizer: Dict with 'tokenizer' and 'model' keys.
+        title:      Article title (reserved for future use).
     """
     if not text or len(text.strip()) < 100:
         return "Summary unavailable — article text too short."
@@ -54,7 +50,6 @@ def summarize_text(text: str, summarizer: dict) -> str:
         tokenizer = summarizer["tokenizer"]
         model = summarizer["model"]
 
-        # Truncate then tokenize, let the tokenizer handle final truncation
         truncated = text[:MAX_INPUT_CHARS]
         inputs = tokenizer(
             truncated,
@@ -63,7 +58,6 @@ def summarize_text(text: str, summarizer: dict) -> str:
             truncation=True,
         )
 
-        # Generate with greedy decoding (do_sample=False) for determinism
         summary_ids = model.generate(
             inputs["input_ids"],
             max_length=SUMMARY_MAX_LENGTH,
@@ -81,8 +75,6 @@ def summarize_text(text: str, summarizer: dict) -> str:
         return "Summary unavailable."
 
 
-# Batch summarization 
-
 def summarize_articles(
     articles: list[dict],
     summarizer: dict,
@@ -95,10 +87,9 @@ def summarize_articles(
     """
     to_summarise = articles[:max_articles]
 
-    logger.info(f"Summarising {len(to_summarise)} articles …")
+    logger.info(f"Summarising {len(to_summarise)} articles ...")
 
     for article in tqdm(to_summarise, desc="Summarising"):
-        # Skip if already summarised (idempotent)
         if article.get("summary") and article["summary"] != "Summary unavailable.":
             continue
 
@@ -106,7 +97,6 @@ def summarize_articles(
             article.get("text", ""), summarizer
         )
 
-    # Mark remaining articles as unsummarised
     for article in articles[max_articles:]:
         if "summary" not in article:
             article["summary"] = ""
@@ -115,11 +105,9 @@ def summarize_articles(
     return articles
 
 
-# CLI entry point 
+# CLI entry point
 
 if __name__ == "__main__":
-    """Load articles, summarise the top 5, print results."""
-
     articles = load_articles_json(ARTICLES_PATH)
     if not articles:
         logger.warning(f"No articles at {ARTICLES_PATH}. Run the pipeline first.")
@@ -128,7 +116,6 @@ if __name__ == "__main__":
     logger.info(f"Loaded {len(articles)} articles")
     summarizer = load_summarizer()
 
-    # Only summarise 5 for this quick test
     summarized = summarize_articles(articles[:5], summarizer, max_articles=5)
 
     print("\n── Summaries ───────────────────────────────────────")

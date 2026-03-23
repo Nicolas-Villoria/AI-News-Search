@@ -135,6 +135,11 @@ export function Pipeline() {
             </div>
           </div>
 
+          {/* Source distribution chart */}
+          {ps.source_distribution && ps.source_distribution.length > 0 && (
+            <SourceDistributionChart distribution={ps.source_distribution} />
+          )}
+
           {/* Feed health table */}
           <div>
             <div className="mb-4 flex items-center justify-between">
@@ -265,6 +270,70 @@ function StageCard({
         </span>
       </div>
       <p className="text-xs text-muted-foreground">{detail}</p>
+    </div>
+  )
+}
+
+const SOURCE_COLORS = [
+  'bg-blue-500',
+  'bg-violet-500',
+  'bg-rose-500',
+  'bg-orange-500',
+  'bg-emerald-500',
+  'bg-yellow-500',
+  'bg-cyan-500',
+  'bg-pink-500',
+  'bg-teal-500',
+  'bg-purple-500',
+  'bg-red-400',
+  'bg-sky-700',
+  'bg-amber-500',
+  'bg-lime-500',
+  'bg-indigo-400',
+]
+
+function SourceDistributionChart({
+  distribution,
+}: {
+  distribution: Array<{ source: string; count: number; percentage: number }>
+}) {
+  const sorted = [...distribution].sort((a, b) => b.percentage - a.percentage)
+  const total = sorted.reduce((s, d) => s + d.count, 0)
+
+  return (
+    <div className="mb-8">
+      <h3 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+        Source Distribution (Embedded Articles)
+      </h3>
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="mb-4 flex h-3 overflow-hidden rounded-full bg-secondary">
+          {sorted.map((item, i) => (
+            <div
+              key={item.source}
+              className={`${SOURCE_COLORS[i % SOURCE_COLORS.length]} transition-all`}
+              style={{ width: `${item.percentage}%` }}
+              title={`${item.source}: ${item.percentage}%`}
+            />
+          ))}
+        </div>
+        <div className="space-y-2">
+          {sorted.map((item, i) => (
+            <div key={item.source} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${SOURCE_COLORS[i % SOURCE_COLORS.length]}`} />
+                <span className="text-muted-foreground">{item.source}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="tabular-nums text-xs text-muted-foreground">{item.percentage}%</span>
+                <span className="font-medium tabular-nums">{item.count}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {total} articles across {sorted.length} sources
+        </p>
+      </div>
     </div>
   )
 }

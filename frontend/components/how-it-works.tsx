@@ -91,13 +91,13 @@ export function HowItWorks() {
             <SignalRow
               icon={<Zap className="h-4 w-4" />}
               name="Time Decay"
-              weight="30%"
+              weight="20%"
               description="Exponential freshness score: 2^(-hours / 48). A 24h-old article scores ~0.71, 48h → 0.50, 1 week → 0.04. Rewards recent news."
             />
             <SignalRow
               icon={<BarChart3 className="h-4 w-4" />}
               name="Keyword Density"
-              weight="20%"
+              weight="30%"
               description="Ratio of distinct AI keywords found in the article. Gives a bonus to articles deeply focused on AI topics."
             />
           </div>

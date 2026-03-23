@@ -47,6 +47,11 @@ interface HealthResponse {
       elapsed_seconds: number
       error: string | null
     }>
+    source_distribution?: Array<{
+      source: string
+      count: number
+      percentage: number
+    }>
   } | null
 }
 

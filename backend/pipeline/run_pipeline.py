@@ -7,6 +7,7 @@ success metrics for the Pipeline Health dashboard.
 
 import json
 import time
+from collections import Counter
 from datetime import datetime, timezone
 
 from crawler.rss_crawler import crawl_all_feeds
@@ -84,6 +85,13 @@ def run_pipeline() -> dict:
             round(index_time / len(ai_articles), 4) if ai_articles else 0.0
         )
         logger.info(f"Indexed {len(ai_articles)} articles in {index_time:.1f}s\n")
+
+        source_counts = Counter(a["source"] for a in ai_articles)
+        total = len(ai_articles)
+        stats["source_distribution"] = [
+            {"source": src, "count": cnt, "percentage": round(cnt / total * 100, 1)}
+            for src, cnt in source_counts.most_common()
+        ]
 
         stats["status"] = "success"
 

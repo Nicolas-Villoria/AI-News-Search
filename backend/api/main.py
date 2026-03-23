@@ -3,47 +3,29 @@ api/main.py — FastAPI backend for AI News Search.
 
 Loads ML models once at startup (embedding + summarizer + FAISS index)
 and exposes endpoints for search, summarization, pipeline health, and
-pipeline execution.  Streamlit (or any client) talks to this server
-via HTTP — no model loading on the frontend side.
+pipeline execution.
 
 Run with:
     uvicorn api.main:app --reload --port 8000
 """
 
+import os
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 
 from indexer.build_index import load_index, load_embedding_model
 from engine.ranker import search
 from engine.summarizer import load_summarizer, summarize_text
 from pipeline.run_pipeline import run_pipeline, load_pipeline_stats
 from utils.helpers import get_logger
+from api.models import SearchRequest, SearchResponse, SummarizeRequest, SummarizeResponse
 
 logger = get_logger(__name__)
-
-
-# ── Pydantic request / response models ──────────────────────────────
-
-class SearchRequest(BaseModel):
-    query: str = Field(..., min_length=1, max_length=500)
-    top_k: int = Field(default=10, ge=1, le=50)
-
-
-class SummarizeRequest(BaseModel):
-    text: str = Field(..., min_length=1)
-
-
-class SearchResponse(BaseModel):
-    query: str
-    total_results: int
-    results: list[dict]
-
-
-class SummarizeResponse(BaseModel):
-    summary: str
 
 
 # ── Application state — holds models and index in memory ────────────
@@ -60,10 +42,10 @@ class AppState:
         self.pipeline_running = False
 
     def load_models(self):
-        logger.info("Loading ML models (this happens once) ...")
+        logger.info("Loading models (this happens once) ...")
         self.embedding_model = load_embedding_model()
         self.summarizer = load_summarizer()
-        logger.info("ML models loaded")
+        logger.info("All models loaded")
 
     def load_search_index(self):
         try:
@@ -92,7 +74,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI News Search API",
-    description="Semantic news search powered by FAISS + DistilBART",
+    description="Semantic news search powered by FAISS + DistilBART summarization",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -135,12 +117,9 @@ def search_articles(request: SearchRequest):
 
 @app.post("/summarize", response_model=SummarizeResponse)
 def summarize_article(request: SummarizeRequest):
-    """
-    Generate a DistilBART summary for article text.
-    """
+    """Generate an abstractive summary using DistilBART."""
     if state.summarizer is None:
         raise HTTPException(status_code=503, detail="Summarizer not loaded.")
-
     summary = summarize_text(request.text, state.summarizer)
     return SummarizeResponse(summary=summary)
 
@@ -177,7 +156,7 @@ async def trigger_pipeline(background_tasks: BackgroundTasks):
         try:
             run_pipeline()
             state.load_search_index()
-            logger.info("Pipeline complete — index reloaded")
+            logger.info("Pipeline complete, index reloaded.")
         except Exception as e:
             logger.error(f"Pipeline failed: {e}")
         finally:
