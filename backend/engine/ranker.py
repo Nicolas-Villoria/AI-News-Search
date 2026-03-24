@@ -1,9 +1,6 @@
 """
 engine/ranker.py — Composite ranking engine for AI news articles.
 
-Combines three signals into a single relevance score:
-
-    score = w_semantic · cosine_sim  +  w_time · time_decay  +  w_keyword · kw_score
 """
 
 import math
@@ -80,9 +77,9 @@ def search(
 
         # Composite weighted score
         relevance = (
-            w["semantic"] * semantic * 0.5
-            + w["time_decay"] * time_sc * 0.2
-            + w["keyword"] * keyword * 0.3
+            w["semantic"] * semantic
+            + w["time_decay"] * time_sc
+            + w["keyword"] * keyword
         )
 
         article["semantic_score"] = round(semantic, 4)

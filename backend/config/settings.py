@@ -19,6 +19,12 @@ PIPELINE_STATS_PATH = DATA_DIR / "pipeline_stats.json"
 # Ensure data directory exists on import
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# Database
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://ainews:ainews_dev@localhost:5432/ainews",
+)
+
 # RSS Feeds 
 # Master list of RSS feeds for AI News Aggregation
 RSS_FEEDS = [
@@ -97,8 +103,8 @@ SUMMARY_MIN_LENGTH = 40
 # Keyword score:       bonus for articles mentioning more AI keywords.
 RANKING_WEIGHTS = {
     "semantic": 0.50,   # Cosine similarity to search query
-    "time_decay": 0.30, # Freshness — exponential decay
-    "keyword": 0.20,    # AI-keyword density bonus
+    "time_decay": 0.20, # Freshness — exponential decay
+    "keyword": 0.30,    # AI-keyword density bonus
 }
 
 # Time-decay half-life: after this many hours an article's freshness

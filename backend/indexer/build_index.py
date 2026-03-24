@@ -5,6 +5,8 @@ Embeds article text using SentenceTransformers (all-MiniLM-L6-v2),
 builds a FAISS inner-product index for semantic search, and persists
 everything to disk.
 
+Also provides ``embed_and_store_articles`` for the PostgreSQL + pgvector
+pipeline path.
 """
 
 import numpy as np
@@ -134,6 +136,58 @@ def build_and_save_index(articles: list[dict]) -> tuple[faiss.IndexFlatIP, np.nd
     save_index(index, embeddings)
     save_articles_json(articles, ARTICLES_PATH)
     return index, embeddings
+
+
+# PostgreSQL + pgvector path 
+
+def embed_and_store_articles(
+    articles: list[dict],
+    db,
+) -> int:
+    """Compute embeddings and insert articles into PostgreSQL with pgvector.
+
+    Skips articles whose URL already exists in the database.
+    Returns the number of newly inserted rows.
+    """
+    from sqlalchemy import select
+    from dateutil import parser as dateutil_parser
+    from db.models import Article
+
+    model = load_embedding_model()
+    embeddings = embed_articles(articles, model)
+    faiss.normalize_L2(embeddings)
+
+    existing_urls = set(
+        row[0] for row in db.execute(select(Article.url)).all()
+    )
+
+    inserted = 0
+    for article, emb in zip(articles, embeddings):
+        url = article.get("link", article.get("url", ""))
+        if url in existing_urls:
+            continue
+
+        published = None
+        if article.get("published"):
+            try:
+                published = dateutil_parser.parse(article["published"])
+            except Exception:
+                pass
+
+        db.add(Article(
+            title=article["title"],
+            url=url,
+            source=article.get("source"),
+            published=published,
+            body=article.get("text", ""),
+            keyword_score=article.get("keyword_score", 0.0),
+            embedding=emb.tolist(),
+        ))
+        inserted += 1
+
+    db.commit()
+    logger.info(f"Stored {inserted} new articles in PostgreSQL ({len(existing_urls)} already existed)")
+    return inserted
 
 
 # CLI entry point 

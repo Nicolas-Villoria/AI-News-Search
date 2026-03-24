@@ -1,4 +1,5 @@
 .venv
+.env
 notes.md
 __pycache__/
 *.pyc
