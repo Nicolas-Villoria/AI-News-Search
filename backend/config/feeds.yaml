@@ -1,0 +1,42 @@
+# config/feeds.yaml — RSS feed sources for AI News Search.
+#
+# Edit this file to add/remove feeds without touching Python code.
+# The pipeline reloads this file on every run.
+
+feeds:
+  # ── Primary Research Labs ──────────────────────────────────────────
+  - https://openai.com/news/rss.xml
+  - https://deepmind.google/blog/rss.xml
+  - https://www.microsoft.com/en-us/research/feed/
+  - https://ai.meta.com/blog/rss.xml
+  - https://developer.nvidia.com/blog/feed
+  - https://aws.amazon.com/blogs/machine-learning/feed/
+  - https://bair.berkeley.edu/blog/feed.xml
+  - https://research.google/blog/rss
+
+  # ── Developer & Open Source ────────────────────────────────────────
+  - https://huggingface.co/blog/feed.xml
+  - https://pytorch.org/feed.xml
+  - https://blog.langchain.dev/rss/
+  - https://stackdiary.com/feed/
+
+  # ── High-Signal AI Newsletters ────────────────────────────────────
+  - https://lastweekin.ai/feed
+  - https://jack-clark.net/feed/
+  - https://thesequence.substack.com/feed
+  - https://www.interconnects.ai/feed
+
+  # ── General Tech ──────────────────────────────────────────────────
+  - https://feeds.bbci.co.uk/news/technology/rss.xml
+  - https://techcrunch.com/category/artificial-intelligence/feed/
+  - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+  - https://feeds.arstechnica.com/arstechnica/technology-lab
+  - https://news.mit.edu/topic/mitartificial-intelligence2-rss.xml
+  - https://www.marktechpost.com/feed/
+  - https://venturebeat.com/category/ai/feed/
+  - https://www.wired.com/feed/tag/ai/latest/rss
+  - https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml
+
+# Override auto-detected feed titles with friendlier names.
+source_overrides:
+  https://aws.amazon.com/blogs/machine-learning/feed/: "AWS Machine Learning Blog"

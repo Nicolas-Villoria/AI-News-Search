@@ -8,9 +8,6 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
-
-import pandas as pd
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -52,22 +49,14 @@ def load_articles_json(path: Path) -> list[dict]:
         return json.load(f)
 
 
-def articles_to_dataframe(articles: list[dict]) -> pd.DataFrame:
-    """Convert article dicts to a DataFrame with proper datetime parsing."""
-    df = pd.DataFrame(articles)
-    if "published" in df.columns:
-        df["published"] = pd.to_datetime(df["published"], errors="coerce", utc=True)
-    return df
-
-
 def utc_now() -> datetime:
     """Timezone-aware UTC now — avoids naive-datetime pitfalls."""
     return datetime.now(timezone.utc)
 
 
 def hours_since(dt: datetime | None) -> float:
-    """Hours elapsed since *dt*. Returns a large number if dt is None/NaT."""
-    if dt is None or pd.isna(dt):
+    """Hours elapsed since *dt*. Returns a large number if dt is None."""
+    if dt is None:
         return 9999.0
     now = utc_now()
     if dt.tzinfo is None:

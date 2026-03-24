@@ -11,10 +11,10 @@ import json
 from pathlib import Path
 
 import numpy as np
-import faiss
 from sentence_transformers import SentenceTransformer
+from sqlalchemy.orm import Session
 
-from engine.ranker import search
+from engine.ranker import search_db
 from config.settings import RANKING_WEIGHTS
 from utils.helpers import get_logger
 
@@ -68,17 +68,15 @@ def compute_precision_at_k(
 def evaluate_single_query(
     query: str,
     relevant_keywords: list[str],
-    index: faiss.IndexFlatIP,
-    articles: list[dict],
+    db: Session,
     model: SentenceTransformer,
-    weights: dict,
+    weights: dict | None = None,
     top_k: int = 10,
 ) -> dict:
     """Run one query and return per-query metrics."""
-    results = search(
+    results = search_db(
         query=query,
-        index=index,
-        articles=articles,
+        db=db,
         model=model,
         top_k=top_k,
         weights=weights,
@@ -100,8 +98,7 @@ def evaluate_single_query(
 
 
 def run_evaluation(
-    index: faiss.IndexFlatIP,
-    articles: list[dict],
+    db: Session,
     model: SentenceTransformer,
     weights: dict | None = None,
     top_k: int = 10,
@@ -118,8 +115,7 @@ def run_evaluation(
         result = evaluate_single_query(
             query=item["query"],
             relevant_keywords=item["relevant_keywords"],
-            index=index,
-            articles=articles,
+            db=db,
             model=model,
             weights=w,
             top_k=top_k,
@@ -139,8 +135,7 @@ def run_evaluation(
 
 
 def run_ablation(
-    index: faiss.IndexFlatIP,
-    articles: list[dict],
+    db: Session,
     model: SentenceTransformer,
     top_k: int = 10,
 ) -> dict:
@@ -153,8 +148,7 @@ def run_ablation(
     for name, weights in ABLATION_CONFIGS.items():
         logger.info(f"Running ablation: {name} (weights={weights})")
         results[name] = run_evaluation(
-            index=index,
-            articles=articles,
+            db=db,
             model=model,
             weights=weights,
             top_k=top_k,
@@ -170,13 +164,14 @@ def run_ablation(
 # CLI entry point
 
 if __name__ == "__main__":
-    from indexer.build_index import load_index, load_embedding_model
+    from db.database import SessionLocal
+    from indexer.build_index import load_embedding_model
 
-    index, embeddings, articles = load_index()
+    db = SessionLocal()
     model = load_embedding_model()
 
     print("Running ablation study...\n")
-    ablation = run_ablation(index, articles, model)
+    ablation = run_ablation(db, model)
 
     print(f"\n{'='*60}")
     print(f"  {'Config':<20s} {'MRR':>8s} {'P@5':>8s}")
@@ -184,3 +179,5 @@ if __name__ == "__main__":
     for name, result in ablation.items():
         print(f"  {name:<20s} {result['mean_mrr']:>8.3f} {result['mean_precision_at_5']:>8.3f}")
     print(f"{'='*60}")
+
+    db.close()

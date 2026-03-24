@@ -4,41 +4,52 @@ pipeline/run_pipeline.py — End-to-end data pipeline orchestrator.
 Runs the full ingestion pipeline in order and collects timing /
 success metrics for the Pipeline Health dashboard.
 
-Writes to both PostgreSQL (primary) and flat files (legacy fallback)
-so the API continues to work during the migration.
+Stores articles in PostgreSQL + pgvector and writes a JSON stats
+file for the health dashboard.
 """
 
-import json
 import time
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from dateutil import parser as dateutil_parser
 
+from sqlalchemy import select
+
+from db.models import Article, PipelineRun
 from crawler.rss_crawler import crawl_all_feeds
 from filter.ai_filter import filter_articles
-from indexer.build_index import build_and_save_index, embed_and_store_articles
-from config.settings import ARTICLES_PATH, MAX_ARTICLE_AGE_DAYS, PIPELINE_STATS_PATH
-from utils.helpers import get_logger, save_articles_json
+from indexer.build_index import embed_and_store_articles
+from config.settings import MAX_ARTICLE_AGE_DAYS, MAX_ARTICLE_RETENTION_DAYS
+from utils.helpers import get_logger
 
 logger = get_logger(__name__)
 
 
 def _get_db_session():
-    """Try to open a DB session. Returns None if the database is unavailable."""
+    """Try to open a DB session. Returns None if the database is unavailable.
+
+    Also ensures tables + pgvector extension exist (idempotent) so the
+    pipeline can run against a fresh database without a prior init step.
+    """
     try:
+        from db.init_db import init_db
         from db.database import SessionLocal
+        init_db()
         db = SessionLocal()
         db.connection()
         return db
     except Exception as e:
-        logger.warning(f"Database unavailable, running file-only pipeline: {e}")
+        logger.warning(f"Database unavailable: {e}")
         return None
+
+
+def _get_existing_urls(db) -> set[str]:
+    """Return all article URLs currently stored in PostgreSQL."""
+    return set(row[0] for row in db.execute(select(Article.url)).all())
 
 
 def _save_pipeline_run(db, stats: dict) -> None:
     """Write or update the pipeline_runs row in PostgreSQL."""
-    from db.models import PipelineRun
-    from dateutil import parser as dateutil_parser
-
     started = dateutil_parser.parse(stats["started_at"])
     finished = (
         dateutil_parser.parse(stats["finished_at"]) if stats.get("finished_at") else None
@@ -55,11 +66,42 @@ def _save_pipeline_run(db, stats: dict) -> None:
     logger.info("Pipeline run saved to PostgreSQL")
 
 
+def _garbage_collect(db, retention_days: int = MAX_ARTICLE_RETENTION_DAYS) -> int:
+    """Delete articles (and their entities) older than *retention_days* (90).
+
+    Returns the number of deleted rows.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    deleted = (
+        db.query(Article)
+        .filter(Article.created_at < cutoff)
+        .delete(synchronize_session="fetch")
+    )
+    db.commit()
+    return deleted
+
+
+def _finalize(stats: dict, pipeline_start: float, db=None) -> None:
+    """Finalize timing, persist stats to JSON and (optionally) PostgreSQL."""
+    stats["finished_at"] = datetime.now(timezone.utc).isoformat()
+    stats["total_seconds"] = round(time.time() - pipeline_start, 2)
+
+    if db is not None:
+        try:
+            _save_pipeline_run(db, stats)
+        except Exception as e:
+            logger.warning(f"Failed to save pipeline run to DB: {e}")
+
+        try:
+            _garbage_collect(db)
+        except Exception as e:
+            logger.warning(f"Garbage collection failed: {e}")
+
+        db.close()
+
+
 def run_pipeline() -> dict:
     """Execute the full data pipeline: crawl -> filter -> embed -> store.
-
-    Writes to PostgreSQL when the database is available, and always
-    writes legacy flat files so the existing API keeps working.
 
     Returns:
         A stats dict with timing, counts, and per-feed health info.
@@ -81,9 +123,15 @@ def run_pipeline() -> dict:
     db = _get_db_session()
 
     try:
-        # Step 1: Crawl
+        # Fetch existing URLs so the crawler can skip them
+        existing_urls = _get_existing_urls(db) if db is not None else set()
+
+        # Crawl
         t0 = time.time()
-        raw_articles, feed_stats = crawl_all_feeds(max_age_days=MAX_ARTICLE_AGE_DAYS)
+        raw_articles, feed_stats = crawl_all_feeds(
+            max_age_days=MAX_ARTICLE_AGE_DAYS,
+            existing_urls=existing_urls,
+        )
         crawl_time = time.time() - t0
 
         stats["crawl"]["articles"] = len(raw_articles)
@@ -97,7 +145,7 @@ def run_pipeline() -> dict:
             _finalize(stats, pipeline_start, db)
             return stats
 
-        # Step 2: Filter
+        # Filter
         t0 = time.time()
         ai_articles = filter_articles(raw_articles)
         filter_time = time.time() - t0
@@ -116,15 +164,16 @@ def run_pipeline() -> dict:
             _finalize(stats, pipeline_start, db)
             return stats
 
-        # Step 3: Embed + Index
+        # Embed and store in PostgreSQL
         t0 = time.time()
 
         if db is not None:
             n_stored = embed_and_store_articles(ai_articles, db)
             stats["index"]["db_inserted"] = n_stored
             logger.info(f"Stored {n_stored} articles in PostgreSQL")
+        else:
+            logger.warning("No database connection — articles were not persisted")
 
-        build_and_save_index(ai_articles)
         index_time = time.time() - t0
 
         stats["index"]["vectors"] = len(ai_articles)
@@ -132,7 +181,7 @@ def run_pipeline() -> dict:
         stats["index"]["avg_embed_seconds"] = (
             round(index_time / len(ai_articles), 4) if ai_articles else 0.0
         )
-        logger.info(f"Indexed {len(ai_articles)} articles in {index_time:.1f}s\n")
+        logger.info(f"Embedded {len(ai_articles)} articles in {index_time:.1f}s\n")
 
         source_counts = Counter(a["source"] for a in ai_articles)
         total = len(ai_articles)
@@ -150,38 +199,6 @@ def run_pipeline() -> dict:
 
     _finalize(stats, pipeline_start, db)
     return stats
-
-
-def _finalize(stats: dict, pipeline_start: float, db=None) -> None:
-    """Finalize timing, persist stats to JSON and (optionally) PostgreSQL."""
-    stats["finished_at"] = datetime.now(timezone.utc).isoformat()
-    stats["total_seconds"] = round(time.time() - pipeline_start, 2)
-
-    _save_stats_json(stats)
-
-    if db is not None:
-        try:
-            _save_pipeline_run(db, stats)
-        except Exception as e:
-            logger.warning(f"Failed to save pipeline run to DB: {e}")
-        finally:
-            db.close()
-
-
-def _save_stats_json(stats: dict) -> None:
-    """Persist stats to the legacy JSON file."""
-    PIPELINE_STATS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(PIPELINE_STATS_PATH, "w", encoding="utf-8") as f:
-        json.dump(stats, f, indent=2, default=str)
-    logger.info(f"Pipeline stats saved to {PIPELINE_STATS_PATH}")
-
-
-def load_pipeline_stats() -> dict | None:
-    """Load the most recent pipeline stats from disk."""
-    if not PIPELINE_STATS_PATH.exists():
-        return None
-    with open(PIPELINE_STATS_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 
 # CLI entry point

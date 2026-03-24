@@ -8,12 +8,12 @@ Import this module everywhere instead of hard-coding values.
 import os
 from pathlib import Path
 
+import yaml
+
 # Paths and directories
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 ARTICLES_PATH = DATA_DIR / "articles.json"
-FAISS_INDEX_PATH = DATA_DIR / "faiss_index.bin"
-EMBEDDINGS_PATH = DATA_DIR / "embeddings.npy"
 PIPELINE_STATS_PATH = DATA_DIR / "pipeline_stats.json"
 
 # Ensure data directory exists on import
@@ -25,47 +25,15 @@ DATABASE_URL = os.environ.get(
     "postgresql://ainews:ainews_dev@localhost:5432/ainews",
 )
 
-# RSS Feeds 
-# Master list of RSS feeds for AI News Aggregation
-RSS_FEEDS = [
-    # PRIMARY RESEARCH LABS 
-    "https://openai.com/news/rss.xml",                # OpenAI
-    "https://deepmind.google/blog/rss.xml",           # Google DeepMind
-    "https://www.microsoft.com/en-us/research/feed/", # Microsoft Research
-    "https://ai.meta.com/blog/rss.xml",               # Meta AI (Facebook)
-    "https://developer.nvidia.com/blog/feed",         # NVIDIA (Hardware/Software)
-    "https://aws.amazon.com/blogs/machine-learning/feed/", # AWS ML
-    "https://bair.berkeley.edu/blog/feed.xml",        # Berkeley AI Research (Academic)
-    "https://research.google/blog/rss",               # Google Research (Broader than DeepMind)
+# RSS Feeds — loaded from feeds.yaml so non-developers can edit them.
+_FEEDS_YAML = Path(__file__).parent / "feeds.yaml"
 
-    # DEVELOPER & OPEN SOURCE 
-    "https://huggingface.co/blog/feed.xml",           # Hugging Face (The Hub)
-    "https://pytorch.org/feed.xml",                   # PyTorch
-    "https://blog.langchain.dev/rss/",                # LangChain (Agents/Engineering)
-    "https://stackdiary.com/feed/",                   # Engineering focused
-    
-    # HIGH-SIGNAL AI NEWSLETTERS 
-    "https://lastweekin.ai/feed",                     # Last Week in AI
-    "https://jack-clark.net/feed/",                   # Import AI (Policy/Safety)
-    "https://thesequence.substack.com/feed",          # The Sequence (Technical)
-    "https://www.interconnects.ai/feed",              # Interconnects (Model Strategy)
+def _load_feeds() -> tuple[list[str], dict[str, str]]:
+    with open(_FEEDS_YAML, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return data.get("feeds", []), data.get("source_overrides", {})
 
-    # GENERAL TECH (Mainstream Coverage)
-    "https://feeds.bbci.co.uk/news/technology/rss.xml",
-    "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-    "https://feeds.arstechnica.com/arstechnica/technology-lab",
-    "https://news.mit.edu/topic/mitartificial-intelligence2-rss.xml",
-    "https://www.marktechpost.com/feed/",
-    "https://venturebeat.com/category/ai/feed/",
-    "https://www.wired.com/feed/tag/ai/latest/rss",
-    "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-]
-
-# Source Name Overrides
-SOURCE_NAME_OVERRIDES: dict[str, str] = {
-    "https://aws.amazon.com/blogs/machine-learning/feed/": "AWS Machine Learning Blog",
-}
+RSS_FEEDS, SOURCE_NAME_OVERRIDES = _load_feeds()
 
 # AI Keyword Filter 
 # Articles must match at least one keyword (case-insensitive) to pass.
@@ -115,3 +83,4 @@ TIME_DECAY_HALF_LIFE_HOURS = 48
 MAX_ARTICLES_DISPLAY = 30      # Cap for the UI
 CRAWL_TIMEOUT_SECONDS = 15     # Per-feed HTTP timeout
 MAX_ARTICLE_AGE_DAYS = 7       # Keep only articles from the last N days (None to disable)
+MAX_ARTICLE_RETENTION_DAYS = 90 # Garbage-collect articles older than this from the DB

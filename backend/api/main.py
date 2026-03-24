@@ -1,9 +1,9 @@
 """
 api/main.py — FastAPI backend for AI News Search.
 
-Loads ML models once at startup (embedding + summarizer + FAISS index)
-and exposes endpoints for search, summarization, pipeline health, and
-pipeline execution.
+Uses PostgreSQL + pgvector for article storage and semantic search.
+ML models (embedding + summarizer) are loaded once at startup and
+held in memory.
 
 Run with:
     uvicorn api.main:app --reload --port 8000
@@ -15,47 +15,42 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
-from indexer.build_index import load_index, load_embedding_model
-from engine.ranker import search
+from db.database import get_db
+from db.models import Article, PipelineRun
+from db.init_db import init_db
+from indexer.build_index import load_embedding_model
+from engine.ranker import search_db
 from engine.summarizer import load_summarizer, summarize_text
-from pipeline.run_pipeline import run_pipeline, load_pipeline_stats
+from pipeline.run_pipeline import run_pipeline
 from utils.helpers import get_logger
 from api.models import SearchRequest, SearchResponse, SummarizeRequest, SummarizeResponse
 
 logger = get_logger(__name__)
 
 
-# ── Application state — holds models and index in memory ────────────
+# ── Application state — ML models only ──────────────────────────────
 
 class AppState:
-    """Mutable singleton that keeps expensive objects alive across requests."""
+    """Holds expensive ML models in memory across requests.
+
+    Article data and search now live in PostgreSQL.
+    """
 
     def __init__(self):
         self.embedding_model = None
         self.summarizer = None
-        self.faiss_index = None
-        self.articles: list[dict] = []
-        self.embeddings = None
         self.pipeline_running = False
 
     def load_models(self):
-        logger.info("Loading models (this happens once) ...")
+        logger.info("Loading ML models (this happens once) ...")
         self.embedding_model = load_embedding_model()
         self.summarizer = load_summarizer()
         logger.info("All models loaded")
-
-    def load_search_index(self):
-        try:
-            self.faiss_index, self.embeddings, self.articles = load_index()
-            logger.info(f"Search index loaded: {len(self.articles)} articles")
-        except FileNotFoundError:
-            logger.warning("No index found on disk — run the pipeline first.")
-            self.faiss_index = None
-            self.articles = []
-            self.embeddings = None
 
 
 state = AppState()
@@ -65,8 +60,8 @@ state = AppState()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     state.load_models()
-    state.load_search_index()
     yield
 
 
@@ -74,8 +69,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI News Search API",
-    description="Semantic news search powered by FAISS + DistilBART summarization",
-    version="1.0.0",
+    description="Semantic news search powered by PostgreSQL + pgvector + DistilBART",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -90,22 +85,21 @@ app.add_middleware(
 # ── Endpoints ───────────────────────────────────────────────────────
 
 @app.post("/search", response_model=SearchResponse)
-def search_articles(request: SearchRequest):
-    """
-    Semantic search with composite ranking (semantic + freshness + keyword).
-    """
-    if state.faiss_index is None or not state.articles:
+def search_articles(request: SearchRequest, db: Session = Depends(get_db)):
+    """Semantic search with composite ranking (semantic + freshness + keyword)."""
+    article_count = db.query(func.count(Article.id)).scalar()
+    if article_count == 0:
         raise HTTPException(
             status_code=503,
-            detail="No index available. Run the pipeline first.",
+            detail="No articles in the database. Run the pipeline first.",
         )
 
-    results = search(
+    results = search_db(
         query=request.query,
-        index=state.faiss_index,
-        articles=state.articles,
+        db=db,
         model=state.embedding_model,
         top_k=request.top_k,
+        weights=
     )
 
     return SearchResponse(
@@ -125,14 +119,24 @@ def summarize_article(request: SummarizeRequest):
 
 
 @app.get("/health")
-async def get_health():
+def get_health(db: Session = Depends(get_db)):
     """API status + latest pipeline run statistics."""
-    pipeline_stats = load_pipeline_stats()
+    article_count = db.query(func.count(Article.id)).filter(
+        Article.is_duplicate == False,  # noqa: E712
+    ).scalar()
+
+    latest_run = (
+        db.query(PipelineRun)
+        .order_by(PipelineRun.id.desc())
+        .first()
+    )
+
+    pipeline_stats = latest_run.stats if latest_run else None
 
     return {
         "api_status": "running",
-        "index_loaded": state.faiss_index is not None,
-        "articles_count": len(state.articles),
+        "index_loaded": article_count > 0,
+        "articles_count": article_count,
         "models_loaded": {
             "embedding": state.embedding_model is not None,
             "summarizer": state.summarizer is not None,
@@ -144,23 +148,22 @@ async def get_health():
 
 @app.post("/pipeline/run")
 async def trigger_pipeline(background_tasks: BackgroundTasks):
-    """Trigger a full pipeline run (crawl -> filter -> index) in the background."""
+    """Trigger a full pipeline run (crawl -> filter -> embed -> store) in the background."""
     if state.pipeline_running:
         raise HTTPException(
             status_code=409,
             detail="Pipeline is already running.",
         )
 
-    def _run_and_reload():
+    def _run():
         state.pipeline_running = True
         try:
             run_pipeline()
-            state.load_search_index()
-            logger.info("Pipeline complete, index reloaded.")
+            logger.info("Pipeline complete.")
         except Exception as e:
             logger.error(f"Pipeline failed: {e}")
         finally:
             state.pipeline_running = False
 
-    background_tasks.add_task(_run_and_reload)
+    background_tasks.add_task(_run)
     return {"message": "Pipeline started in background", "status": "running"}

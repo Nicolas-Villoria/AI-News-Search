@@ -27,17 +27,6 @@ def compute_keyword_score(text: str) -> float:
     return matches / len(AI_KEYWORDS)
 
 
-def is_ai_related(article: dict, threshold: float = 0.02) -> bool:
-    """
-    Check whether an article is about AI.
-    """
-    combined = f"{article.get('title', '')} {article.get('text', '')}"
-    score = compute_keyword_score(combined)
-    # Threshold is tunable. Currently set to 0.02, 
-    # meaning an article must match at least 1/52 keywords
-    return score >= threshold
-
-
 def filter_articles(articles: list[dict], threshold: float = 0.02) -> list[dict]:
     """
     Filter a list of articles to only AI-related ones.

@@ -1,30 +1,29 @@
 {
-  "started_at": "2026-03-23T22:30:04.134455+00:00",
-  "finished_at": "2026-03-23T22:30:49.376167+00:00",
-  "total_seconds": 45.24,
+  "started_at": "2026-03-24T21:43:15.028989+00:00",
+  "finished_at": "2026-03-24T21:43:43.829388+00:00",
+  "total_seconds": 28.8,
   "crawl": {
-    "articles": 140,
-    "seconds": 30.66
+    "articles": 130,
+    "seconds": 28.4
   },
   "filter": {
-    "input": 140,
-    "output": 98,
-    "pass_rate": 0.7,
-    "seconds": 0.05
+    "input": 130,
+    "output": 81,
+    "pass_rate": 0.6231,
+    "seconds": 0.04
   },
   "index": {
-    "vectors": 98,
-    "avg_embed_seconds": 0.1418,
-    "seconds": 13.89,
-    "db_inserted": 98
+    "vectors": 81,
+    "avg_embed_seconds": 0.0,
+    "seconds": 0.0
   },
   "feed_stats": [
     {
       "url": "https://openai.com/news/rss.xml",
       "source": "OpenAI News",
-      "article_count": 892,
+      "article_count": 895,
       "status": "success",
-      "elapsed_seconds": 1.32,
+      "elapsed_seconds": 2.81,
       "error": null
     },
     {
@@ -32,7 +31,7 @@
       "source": "Google DeepMind News",
       "article_count": 100,
       "status": "success",
-      "elapsed_seconds": 0.5,
+      "elapsed_seconds": 0.41,
       "error": null
     },
     {
@@ -40,7 +39,7 @@
       "source": "Microsoft Research",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 2.06,
+      "elapsed_seconds": 1.03,
       "error": null
     },
     {
@@ -48,7 +47,7 @@
       "source": "https://ai.meta.com/blog/rss.xml",
       "article_count": 0,
       "status": "success",
-      "elapsed_seconds": 0.78,
+      "elapsed_seconds": 1.02,
       "error": null
     },
     {
@@ -56,7 +55,7 @@
       "source": "NVIDIA Technical Blog",
       "article_count": 100,
       "status": "success",
-      "elapsed_seconds": 0.77,
+      "elapsed_seconds": 0.78,
       "error": null
     },
     {
@@ -64,7 +63,7 @@
       "source": "AWS Machine Learning Blog",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.73,
+      "elapsed_seconds": 0.88,
       "error": null
     },
     {
@@ -72,7 +71,7 @@
       "source": "The Berkeley Artificial Intelligence Research Blog",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 0.9,
+      "elapsed_seconds": 1.18,
       "error": null
     },
     {
@@ -80,15 +79,15 @@
       "source": "The latest research from Google",
       "article_count": 100,
       "status": "success",
-      "elapsed_seconds": 1.41,
+      "elapsed_seconds": 1.63,
       "error": null
     },
     {
       "url": "https://huggingface.co/blog/feed.xml",
       "source": "Hugging Face - Blog",
-      "article_count": 750,
+      "article_count": 751,
       "status": "success",
-      "elapsed_seconds": 0.34,
+      "elapsed_seconds": 0.35,
       "error": null
     },
     {
@@ -96,7 +95,7 @@
       "source": "https://pytorch.org/feed.xml",
       "article_count": 0,
       "status": "success",
-      "elapsed_seconds": 0.82,
+      "elapsed_seconds": 0.28,
       "error": null
     },
     {
@@ -104,7 +103,7 @@
       "source": "LangChain Blog",
       "article_count": 15,
       "status": "success",
-      "elapsed_seconds": 1.17,
+      "elapsed_seconds": 0.78,
       "error": null
     },
     {
@@ -112,7 +111,7 @@
       "source": "Stack Diary",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 1.17,
+      "elapsed_seconds": 0.66,
       "error": null
     },
     {
@@ -120,7 +119,7 @@
       "source": "Last Week in AI",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.35,
+      "elapsed_seconds": 0.33,
       "error": null
     },
     {
@@ -128,7 +127,7 @@
       "source": "Import AI",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 0.31,
+      "elapsed_seconds": 0.22,
       "error": null
     },
     {
@@ -136,7 +135,7 @@
       "source": "TheSequence",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.2,
+      "elapsed_seconds": 0.15,
       "error": null
     },
     {
@@ -144,7 +143,7 @@
       "source": "Interconnects AI",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.31,
+      "elapsed_seconds": 0.43,
       "error": null
     },
     {
@@ -152,7 +151,7 @@
       "source": "BBC News",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.18,
+      "elapsed_seconds": 0.17,
       "error": null
     },
     {
@@ -160,7 +159,7 @@
       "source": "AI News & Artificial Intelligence | TechCrunch",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.09,
+      "elapsed_seconds": 0.15,
       "error": null
     },
     {
@@ -168,7 +167,7 @@
       "source": "AI | The Verge",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 0.14,
+      "elapsed_seconds": 0.11,
       "error": null
     },
     {
@@ -176,7 +175,7 @@
       "source": "Biz & IT - Ars Technica",
       "article_count": 20,
       "status": "success",
-      "elapsed_seconds": 0.11,
+      "elapsed_seconds": 0.14,
       "error": null
     },
     {
@@ -184,7 +183,7 @@
       "source": "MIT News - Artificial intelligence",
       "article_count": 50,
       "status": "success",
-      "elapsed_seconds": 0.26,
+      "elapsed_seconds": 0.42,
       "error": null
     },
     {
@@ -192,7 +191,7 @@
       "source": "MarkTechPost",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 0.24,
+      "elapsed_seconds": 1.32,
       "error": null
     },
     {
@@ -200,7 +199,7 @@
       "source": "AI | VentureBeat",
       "article_count": 7,
       "status": "success",
-      "elapsed_seconds": 0.4,
+      "elapsed_seconds": 0.37,
       "error": null
     },
     {
@@ -208,15 +207,15 @@
       "source": "Feed: Artificial Intelligence Latest",
       "article_count": 10,
       "status": "success",
-      "elapsed_seconds": 0.13,
+      "elapsed_seconds": 0.2,
       "error": null
     },
     {
       "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
       "source": "NYT > Technology",
-      "article_count": 25,
+      "article_count": 22,
       "status": "success",
-      "elapsed_seconds": 0.11,
+      "elapsed_seconds": 0.09,
       "error": null
     }
   ],
@@ -225,78 +224,78 @@
   "source_distribution": [
     {
       "source": "AWS Machine Learning Blog",
-      "count": 17,
-      "percentage": 17.3
+      "count": 15,
+      "percentage": 18.5
     },
     {
       "source": "AI News & Artificial Intelligence | TechCrunch",
-      "count": 16,
-      "percentage": 16.3
-    },
-    {
-      "source": "NVIDIA Technical Blog",
-      "count": 15,
-      "percentage": 15.3
+      "count": 14,
+      "percentage": 17.3
     },
     {
       "source": "MarkTechPost",
       "count": 9,
-      "percentage": 9.2
+      "percentage": 11.1
+    },
+    {
+      "source": "NVIDIA Technical Blog",
+      "count": 7,
+      "percentage": 8.6
     },
     {
       "source": "AI | The Verge",
-      "count": 8,
-      "percentage": 8.2
+      "count": 7,
+      "percentage": 8.6
     },
     {
       "source": "MIT News - Artificial intelligence",
-      "count": 6,
-      "percentage": 6.1
-    },
-    {
-      "source": "Feed: Artificial Intelligence Latest",
-      "count": 6,
-      "percentage": 6.1
+      "count": 7,
+      "percentage": 8.6
     },
     {
       "source": "Hugging Face - Blog",
-      "count": 4,
-      "percentage": 4.1
+      "count": 5,
+      "percentage": 6.2
     },
     {
       "source": "LangChain Blog",
       "count": 4,
-      "percentage": 4.1
+      "percentage": 4.9
     },
     {
-      "source": "Last Week in AI",
-      "count": 3,
-      "percentage": 3.1
+      "source": "Feed: Artificial Intelligence Latest",
+      "count": 4,
+      "percentage": 4.9
     },
     {
       "source": "TheSequence",
       "count": 3,
-      "percentage": 3.1
+      "percentage": 3.7
     },
     {
       "source": "Interconnects AI",
-      "count": 3,
-      "percentage": 3.1
-    },
-    {
-      "source": "Import AI",
       "count": 2,
-      "percentage": 2.0
+      "percentage": 2.5
     },
     {
       "source": "Microsoft Research",
       "count": 1,
-      "percentage": 1.0
+      "percentage": 1.2
     },
     {
       "source": "The latest research from Google",
       "count": 1,
-      "percentage": 1.0
+      "percentage": 1.2
+    },
+    {
+      "source": "Last Week in AI",
+      "count": 1,
+      "percentage": 1.2
+    },
+    {
+      "source": "Import AI",
+      "count": 1,
+      "percentage": 1.2
     }
   ]
 }

@@ -125,7 +125,7 @@ def fetch_feed(feed_url: str) -> tuple[list[dict], dict]:
         stats.update(status="failed", error=str(e),
                      elapsed_seconds=round(time.time() - t0, 2))
         return [], stats
-
+    # Override the source name, this was the case for Amazon.
     source = SOURCE_NAME_OVERRIDES.get(feed_url, getattr(feed.feed, "title", feed_url))
     stats["source"] = source
     articles = []
@@ -152,18 +152,24 @@ def fetch_feed(feed_url: str) -> tuple[list[dict], dict]:
 
 # Main crawler 
 
-def crawl_all_feeds(max_age_days: int | None = None) -> tuple[list[dict], list[dict]]:
+def crawl_all_feeds(
+    max_age_days: int | None = None,
+    existing_urls: set[str] | None = None,
+) -> tuple[list[dict], list[dict]]:
     """Crawl all configured RSS feeds and return deduplicated articles + feed stats.
 
     Pipeline:
         1. Fetch entries from every RSS feed
-        2. Deduplicate by URL
-        3. Extract full text for each unique article
-        4. Drop articles with insufficient text
+        2. Deduplicate by URL (within this run + against *existing_urls*)
+        3. Drop articles older than *max_age_days*
+        4. Extract full text for each unique, new article
+        5. Drop articles with insufficient text
 
     Args:
         max_age_days: Keep only articles from the last N days.
             Example: 7 keeps only the last week. If None, no date filter.
+        existing_urls: URLs already stored in the database. Articles with
+            these URLs are skipped before the expensive text-extraction step.
 
     Returns:
         (articles, feed_stats) — articles ready for filtering/indexing,
@@ -180,28 +186,31 @@ def crawl_all_feeds(max_age_days: int | None = None) -> tuple[list[dict], list[d
 
     logger.info(f"Raw entries collected: {len(raw_articles)}")
 
-    # Deduplicate by URL
-    seen_urls: set[str] = set()
+    # Deduplicate by URL (within this run + against DB)
+    seen_urls: set[str] = set(existing_urls or ())
     unique_articles = []
     for article in raw_articles:
         if article["link"] not in seen_urls:
             seen_urls.add(article["link"])
             unique_articles.append(article)
 
+    n_skipped = len(raw_articles) - len(unique_articles)
     logger.info(
-        f"After dedup: {len(unique_articles)} "
-        f"(removed {len(raw_articles) - len(unique_articles)} duplicates)"
+        f"After dedup: {len(unique_articles)} new articles "
+        f"({n_skipped} skipped — duplicates or already in DB)"
     )
 
-    # Drop articles older than max_age_days before expensive page extraction.
+    # Drop articles older than max_age_days (7 days by default) before expensive page extraction.
     if max_age_days is not None:
-        recent_articles = [
+        before = len(unique_articles)
+        unique_articles = [
             a for a in unique_articles if _is_within_days(a.get("published", ""), max_age_days)
         ]
-        unique_articles = recent_articles
+        if before != len(unique_articles):
+            logger.info(f"Age filter: dropped {before - len(unique_articles)} articles older than {max_age_days}d")
 
     # Extract full text
-    logger.info("Extracting full article text (this may take a minute)")
+    logger.info(f"Extracting full text for {len(unique_articles)} articles")
     with ThreadPoolExecutor(max_workers=MAX_EXTRACTION_WORKERS) as executor:
         extracted_texts = list(executor.map(
             extract_full_text,
@@ -215,9 +224,7 @@ def crawl_all_feeds(max_age_days: int | None = None) -> tuple[list[dict], list[d
     full_articles = [
         a for a in unique_articles if len(a.get("text", "")) >= MIN_TEXT_LENGTH
     ]
-    logger.info(
-        f"Final article count: {len(full_articles)}"
-    )
+    logger.info(f"Final article count: {len(full_articles)}")
 
     return full_articles, feed_stats
 
