@@ -12,6 +12,7 @@ torch>=2.0.0
 
 # Config
 pyyaml>=6.0
+python-dotenv>=1.0.0
 
 # API
 fastapi>=0.110.0

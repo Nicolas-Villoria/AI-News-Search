@@ -13,9 +13,16 @@ import os
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000",
+).split(",")
+
+API_KEY = os.environ.get("API_KEY")
+
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, Header, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -76,9 +83,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 
@@ -99,7 +106,7 @@ def search_articles(request: SearchRequest, db: Session = Depends(get_db)):
         db=db,
         model=state.embedding_model,
         top_k=request.top_k,
-        weights=
+        weights=None
     )
 
     return SearchResponse(
@@ -116,6 +123,12 @@ def summarize_article(request: SummarizeRequest):
         raise HTTPException(status_code=503, detail="Summarizer not loaded.")
     summary = summarize_text(request.text, state.summarizer)
     return SummarizeResponse(summary=summary)
+
+
+@app.get("/ping")
+def ping():
+    """Lightweight health check for load balancers (no DB)."""
+    return {"status": "ok"}
 
 
 @app.get("/health")
@@ -147,8 +160,13 @@ def get_health(db: Session = Depends(get_db)):
 
 
 @app.post("/pipeline/run")
-async def trigger_pipeline(background_tasks: BackgroundTasks):
+async def trigger_pipeline(
+    background_tasks: BackgroundTasks,
+    x_api_key: str | None = Header(None),
+):
     """Trigger a full pipeline run (crawl -> filter -> embed -> store) in the background."""
+    if API_KEY and x_api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or missing API key.")
     if state.pipeline_running:
         raise HTTPException(
             status_code=409,

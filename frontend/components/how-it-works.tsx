@@ -65,9 +65,9 @@ export function HowItWorks() {
           <PipelineStep
             number={4}
             icon={<Database className="h-5 w-5" />}
-            title="Index with FAISS"
-            description="Normalized embeddings are added to a FAISS IndexFlatIP (inner product) index for exact nearest-neighbor search."
-            detail="At this scale (~100-200 articles), brute-force exact search gives sub-millisecond latency with perfect recall. For millions of vectors, this would be replaced with IndexIVFFlat (approximate search with Voronoi clustering)."
+            title="Store in PostgreSQL + pgvector"
+            description="Normalized embeddings are stored alongside article metadata in PostgreSQL using the pgvector extension with an HNSW index for fast cosine similarity search."
+            detail="pgvector handles both storage and search in a single system. The HNSW index provides sub-millisecond approximate nearest-neighbor search that scales to millions of vectors."
           />
         </div>
       </div>
@@ -116,13 +116,13 @@ export function HowItWorks() {
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <TechItem label="Embeddings" value="sentence-transformers (MiniLM-L6-v2, 384-dim)" />
-          <TechItem label="Vector Search" value="FAISS IndexFlatIP (exact cosine search)" />
+          <TechItem label="Vector Search" value="PostgreSQL + pgvector (HNSW cosine index)" />
           <TechItem label="RSS Parsing" value="feedparser + newspaper3k" />
-          <TechItem label="Summarization" value="Extractive (position + relevance scoring)" />
+          <TechItem label="Summarization" value="DistilBART-CNN-12-6 (abstractive, on-demand)" />
           <TechItem label="API" value="FastAPI + Uvicorn" />
           <TechItem label="Frontend" value="Next.js + Tailwind CSS" />
-          <TechItem label="Data" value="JSON + NumPy + FAISS binary (no database)" />
-          <TechItem label="Language" value="Python 3.11 (backend) + TypeScript (frontend)" />
+          <TechItem label="Database" value="PostgreSQL + pgvector (Supabase)" />
+          <TechItem label="Language" value="Python 3.12 (backend) + TypeScript (frontend)" />
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export function HowItWorks() {
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
             <ArchBlock icon={<Brain />} label="Sentence Embeddings" sub="MiniLM-L6-v2, 384-dim vectors" />
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
-            <ArchBlock icon={<Database />} label="FAISS Index" sub="IndexFlatIP, exact inner product" />
+            <ArchBlock icon={<Database />} label="PostgreSQL + pgvector" sub="HNSW index, cosine similarity" />
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
             <div className="flex w-full max-w-md gap-3">
               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-3 text-center">
@@ -150,7 +150,7 @@ export function HowItWorks() {
               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-3 text-center">
                 <FileText className="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
                 <p className="text-xs font-medium">Summarizer</p>
-                <p className="text-xs text-muted-foreground">extractive, on-demand</p>
+                <p className="text-xs text-muted-foreground">DistilBART, on-demand</p>
               </div>
             </div>
           </div>

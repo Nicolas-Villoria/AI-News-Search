@@ -1,0 +1,17 @@
+.venv
+.env
+.git
+.github
+.gitignore
+.mypy_cache
+.DS_Store
+__pycache__
+*.pyc
+
+# Frontend (not needed in backend container)
+frontend/
+docs/
+notes.md
+
+# Data artifacts
+backend/data/

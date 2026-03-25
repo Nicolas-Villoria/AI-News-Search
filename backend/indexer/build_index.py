@@ -21,14 +21,20 @@ def _normalize_l2(arr: np.ndarray) -> None:
     arr /= norms
 
 
-# ── Model loading ────────────────────────────────────────────────────
+# ── Model loading (singleton) ────────────────────────────────────────
+
+_model_cache: SentenceTransformer | None = None
+
 
 def load_embedding_model() -> SentenceTransformer:
-    """Load the sentence-transformer embedding model."""
+    """Load the sentence-transformer embedding model (cached after first call)."""
+    global _model_cache
+    if _model_cache is not None:
+        return _model_cache
     logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}")
-    model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    _model_cache = SentenceTransformer(EMBEDDING_MODEL_NAME)
     logger.info("Embedding model loaded successfully")
-    return model
+    return _model_cache
 
 
 # ── Embedding ────────────────────────────────────────────────────────

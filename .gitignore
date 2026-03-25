@@ -1,18 +1,24 @@
+# Python
 .venv
-.env
-notes.md
 __pycache__/
 *.pyc
 
+# Secrets & notes
+.env
+notes.md
+
+# OS
+.DS_Store
+
+# Frontend
 frontend/node_modules
 frontend/.next
 frontend/out
 frontend/build
-frontend/.DS_Store
 frontend/*.pem
-frontend/*.txt
 frontend/*.log
-frontend/*.json
 frontend/*.bin
 frontend/*.npy
 
+# Backend data artifacts
+backend/data/

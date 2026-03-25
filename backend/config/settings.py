@@ -8,13 +8,20 @@ Import this module everywhere instead of hard-coding values.
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 import yaml
 
 # Paths and directories
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = PROJECT_ROOT.parent
 DATA_DIR = PROJECT_ROOT / "data"
 ARTICLES_PATH = DATA_DIR / "articles.json"
 PIPELINE_STATS_PATH = DATA_DIR / "pipeline_stats.json"
+
+# Load .env before DATABASE_URL — uvicorn does not read .env automatically.
+for _env_path in (REPO_ROOT / ".env", PROJECT_ROOT / ".env"):
+    if _env_path.is_file():
+        load_dotenv(_env_path, override=False)
 
 # Ensure data directory exists on import
 DATA_DIR.mkdir(parents=True, exist_ok=True)
