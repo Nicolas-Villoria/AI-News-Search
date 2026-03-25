@@ -125,6 +125,12 @@ def summarize_article(request: SummarizeRequest):
     return SummarizeResponse(summary=summary)
 
 
+@app.get("/")
+def read_root():
+    """Root endpoint for health checks (e.g., Hugging Face Spaces)."""
+    return {"message": "AI News Search API is running"}
+
+
 @app.get("/ping")
 def ping():
     """Lightweight health check for load balancers (no DB)."""
