@@ -72,6 +72,7 @@ def embed_and_store_articles(articles: list[dict], db) -> int:
     from sqlalchemy import select
     from dateutil import parser as dateutil_parser
     from db.models import Article
+    from engine.topic_engine import process_article_entities
 
     model = load_embedding_model()
     embeddings = embed_articles(articles, model)
@@ -82,29 +83,35 @@ def embed_and_store_articles(articles: list[dict], db) -> int:
     )
 
     inserted = 0
-    for article, emb in zip(articles, embeddings):
-        url = article.get("link", article.get("url", ""))
+    for article_dict, emb in zip(articles, embeddings):
+        url = article_dict.get("link", article_dict.get("url", ""))
         if url in existing_urls:
             continue
 
         published = None
-        if article.get("published"):
+        if article_dict.get("published"):
             try:
-                published = dateutil_parser.parse(article["published"])
+                published = dateutil_parser.parse(article_dict["published"])
             except Exception:
                 pass
 
-        db.add(Article(
-            title=article["title"],
+        new_article = Article(
+            title=article_dict["title"],
             url=url,
-            source=article.get("source"),
+            source=article_dict.get("source"),
             published=published,
-            body=article.get("text", ""),
-            keyword_score=article.get("keyword_score", 0.0),
+            body=article_dict.get("text", ""),
+            keyword_score=article_dict.get("keyword_score", 0.0),
             embedding=emb.tolist(),
-        ))
+        )
+        db.add(new_article)
+        db.flush()  # Assign Primary Key
+        
+        # Extract and save named entities for this article
+        process_article_entities(db, new_article)
+        
         inserted += 1
 
     db.commit()
-    logger.info(f"Stored {inserted} new articles in PostgreSQL ({len(existing_urls)} already existed)")
+    logger.info(f"Stored {inserted} new articles (w/ entities) in PostgreSQL ({len(existing_urls)} already existed)")
     return inserted

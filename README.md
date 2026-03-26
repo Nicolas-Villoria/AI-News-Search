@@ -8,10 +8,12 @@ An AI-powered news aggregation and search system that crawls tech news from RSS 
 
 1. **Crawls** ~200 articles from 25+ curated RSS feeds (OpenAI, DeepMind, TechCrunch, etc.)
 2. **Filters** down to AI-related articles using keyword matching (~70% pass rate)
-3. **Embeds** article text with Sentence-Transformers (`all-MiniLM-L6-v2`)
-4. **Indexes** in **PostgreSQL + pgvector** using HNSW for fast semantic search
-5. **Ranks** results using a weighted composite of semantic similarity, time decay, and keyword density
-6. **Summarizes** articles on demand with **DistilBART**
+3. **Extracts Entities (NER)** using **spaCy** to identify People, Organizations, and GPEs
+4. **Embeds** article text with Sentence-Transformers (`all-MiniLM-L6-v2`)
+5. **Clusters** articles using **K-Means (scikit-learn)** to discover trending topics
+6. **Indexes** in **PostgreSQL + pgvector** using HNSW for fast semantic search
+7. **Ranks** results using a weighted composite of semantic similarity, time decay, and keyword density
+8. **Summarizes** articles on demand with **DistilBART**
 
 ---
 
@@ -19,14 +21,19 @@ An AI-powered news aggregation and search system that crawls tech news from RSS 
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  RSS Crawl  │ →  │  AI Filter  │ →  │  Embed +    │ →  │  PostgreSQL │
-│  25+ feeds  │    │  keywords   │    │  MiniLM     │    │  + pgvector │
+│  RSS Crawl  │ →  │  AI Filter  │ →  │  NER Extr.  │ →  │  Cluster    │
+│  25+ feeds  │    │  keywords   │    │  spaCy      │    │  K-Means    │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                    ┌─────────────┐    ┌─────────────┐
-   User query  →    │  Ranker     │ →  │  Summarizer │
-                    │  pgvector   │    │  DistilBART  │
-                    └─────────────┘    └─────────────┘
+                                                                ↓
+                    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+   User query  →    │  Ranker     │ ←  │  Postgres   │ ←  │  Embed      │
+                    │  pgvector   │    │  + pgvector │    │  MiniLM     │
+                    └─────────────┘    └─────────────┘    └─────────────┘
+                           ↓
+                    ┌─────────────┐
+                    │  Summarizar │
+                    │  DistilBART  │
+                    └─────────────┘
 ```
 
 ---

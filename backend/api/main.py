@@ -35,7 +35,9 @@ from engine.ranker import search_db
 from engine.summarizer import load_summarizer, summarize_text
 from pipeline.run_pipeline import run_pipeline
 from utils.helpers import get_logger
-from api.models import SearchRequest, SearchResponse, SummarizeRequest, SummarizeResponse
+from api.models import (
+    SearchRequest, SearchResponse, SummarizeRequest, SummarizeResponse, TopicsResponse
+)
 
 logger = get_logger(__name__)
 
@@ -91,6 +93,27 @@ app.add_middleware(
 
 # ── Endpoints ───────────────────────────────────────────────────────
 
+@app.get("/topics", response_model=TopicsResponse)
+def get_topics(db: Session = Depends(get_db)):
+    """Fetch all active topic clusters."""
+    from db.models import TopicCluster
+    topics = (
+        db.query(TopicCluster)
+        .filter(TopicCluster.article_count > 0)
+        .order_by(TopicCluster.article_count.desc())
+        .all()
+    )
+    
+    return TopicsResponse(
+        topics=[{
+            "id": t.id,
+            "label": t.label,
+            "summary": t.summary,
+            "article_count": t.article_count
+        } for t in topics]
+    )
+
+
 @app.post("/search", response_model=SearchResponse)
 def search_articles(request: SearchRequest, db: Session = Depends(get_db)):
     """Semantic search with composite ranking (semantic + freshness + keyword)."""
@@ -106,7 +129,8 @@ def search_articles(request: SearchRequest, db: Session = Depends(get_db)):
         db=db,
         model=state.embedding_model,
         top_k=request.top_k,
-        weights=None
+        weights=None,
+        cluster_id=request.cluster_id
     )
 
     return SearchResponse(
@@ -129,12 +153,6 @@ def summarize_article(request: SummarizeRequest):
 def read_root():
     """Root endpoint for health checks (e.g., Hugging Face Spaces)."""
     return {"message": "AI News Search API is running"}
-
-
-@app.get("/ping")
-def ping():
-    """Lightweight health check for load balancers (no DB)."""
-    return {"status": "ok"}
 
 
 @app.get("/health")

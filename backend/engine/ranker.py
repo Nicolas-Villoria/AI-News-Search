@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import numpy as np
 from dateutil import parser as dateutil_parser
 from sentence_transformers import SentenceTransformer
-from sqlalchemy import text
+from sqlalchemy import text, select
 from sqlalchemy.orm import Session
 
 from config.settings import (
@@ -34,51 +34,93 @@ def _encode_query(query: str, model: SentenceTransformer) -> np.ndarray:
     return vec
 
 
-_SEARCH_SQL = text("""
-    WITH scored AS (
-        SELECT
-            id, title, url, source, published, body, keyword_score,
-            1 - (embedding <=> :qvec ::vector) AS semantic_score,
-            CASE WHEN published IS NOT NULL
-                 THEN pow(2, -EXTRACT(EPOCH FROM (NOW() - published)) / 3600.0 / :half_life)
-                 ELSE 0 END AS time_score
-        FROM articles
-        WHERE embedding IS NOT NULL AND NOT is_duplicate
-    )
-    SELECT *,
-        :w_sem * semantic_score
-      + :w_time * time_score
-      + :w_kw  * COALESCE(keyword_score, 0)
-        AS relevance_score
-    FROM scored
-    ORDER BY relevance_score DESC
-    LIMIT :top_k
-""")
-
-
 def search_db(
     query: str,
     db: Session,
     model: SentenceTransformer,
     top_k: int = MAX_ARTICLES_DISPLAY,
-    weights: dict | None = None
+    weights: dict | None = None,
+    cluster_id: int | None = None,
     ) -> list[dict]:
     """Search articles with pgvector cosine similarity + composite ranking.
-
-    The entire ranking formula runs inside PostgreSQL in a single query.
+    
+    If query is empty, returns the latest articles ordered by publication date.
     """
     w = weights or RANKING_WEIGHTS
-    query_vec = _encode_query(query, model)
-    vec_literal = "[" + ",".join(str(float(x)) for x in query_vec[0]) + "]"
+    query = query.strip()
+    
+    cluster_filter = "AND cluster_id = :cluster_id" if cluster_id is not None else ""
+    
+    if not query:
+        # Fallback for empty query: Just show latest articles
+        sql_text = f"""
+            SELECT
+                id, title, url, source, published, body, keyword_score, cluster_id,
+                0.0 AS semantic_score,
+                1.0 AS time_score,
+                0.0 AS relevance_score
+            FROM articles
+            WHERE NOT is_duplicate {cluster_filter}
+            ORDER BY published DESC NULLS LAST, created_at DESC
+            LIMIT :top_k
+        """
+        params = {"top_k": top_k}
+        if cluster_id is not None:
+            params["cluster_id"] = cluster_id
+    else:
+        # Standard semantic search
+        query_vec = _encode_query(query, model)
+        vec_literal = "[" + ",".join(str(float(x)) for x in query_vec[0]) + "]"
 
-    rows = db.execute(_SEARCH_SQL, {
-        "qvec": vec_literal,
-        "half_life": TIME_DECAY_HALF_LIFE_HOURS,
-        "w_sem": w["semantic"],
-        "w_time": w["time_decay"],
-        "w_kw": w["keyword"],
-        "top_k": top_k,
-    }).fetchall()
+        sql_text = f"""
+            WITH scored AS (
+                SELECT
+                    id, title, url, source, published, body, keyword_score, cluster_id,
+                    1 - (embedding <=> :qvec ::vector) AS semantic_score,
+                    CASE WHEN published IS NOT NULL
+                         THEN pow(2, -EXTRACT(EPOCH FROM (NOW() - published)) / 3600.0 / :half_life)
+                         ELSE 0 END AS time_score
+                FROM articles
+                WHERE embedding IS NOT NULL AND NOT is_duplicate {cluster_filter}
+            )
+            SELECT *,
+                :w_sem * semantic_score
+              + :w_time * time_score
+              + :w_kw  * COALESCE(keyword_score, 0)
+                AS relevance_score
+            FROM scored
+            ORDER BY relevance_score DESC
+            LIMIT :top_k
+        """
+
+        params = {
+            "qvec": vec_literal,
+            "half_life": TIME_DECAY_HALF_LIFE_HOURS,
+            "w_sem": w["semantic"],
+            "w_time": w["time_decay"],
+            "w_kw": w["keyword"],
+            "top_k": top_k,
+        }
+        if cluster_id is not None:
+            params["cluster_id"] = cluster_id
+
+    rows = db.execute(text(sql_text), params).fetchall()
+
+    article_ids = [row.id for row in rows]
+    entities_by_article = {aid: [] for aid in article_ids}
+    cluster_by_article = {row.id: row.cluster_id for row in rows}
+
+    if article_ids:
+        from db.models import Entity
+        entities = db.execute(
+            select(Entity).where(Entity.article_id.in_(article_ids))
+        ).scalars().all()
+        for e in entities:
+            entities_by_article[e.article_id].append({
+                "name": e.name,
+                "label": e.label,
+                "count": e.count,
+            })
 
     results = []
     for row in rows:
@@ -93,6 +135,8 @@ def search_db(
             "time_score": round(float(row.time_score), 4),
             "keyword_score": round(float(row.keyword_score or 0), 4),
             "relevance_score": round(float(row.relevance_score), 4),
+            "cluster_id": cluster_by_article[row.id],
+            "entities": entities_by_article[row.id],
         })
 
     return results

@@ -56,18 +56,26 @@ export function HowItWorks() {
           <StepArrow />
           <PipelineStep
             number={3}
-            icon={<Brain className="h-5 w-5" />}
-            title="Embed with MiniLM-L6-v2"
-            description="Each article's title + first 500 characters are encoded into a 384-dimensional dense vector using the all-MiniLM-L6-v2 sentence transformer."
-            detail="These embeddings capture semantic meaning, so 'large language model' and 'GPT-4 architecture' are close in vector space even though they share no words. Vectors are L2-normalized so inner product equals cosine similarity."
+            icon={<Zap className="h-5 w-5" />}
+            title="Named Entity Recognition (NER)"
+            description="Extracts key entities (PERSON, ORG, GPE) using spaCy's en_core_web_sm model from the cleaned article text."
+            detail="Entities are stored as tags, allowing us to identify the main actors in every story (e.g., 'Sam Altman', 'Google', 'NVIDIA') and use them for topic labeling."
           />
           <StepArrow />
           <PipelineStep
             number={4}
+            icon={<Brain className="h-5 w-5" />}
+            title="Embed & Cluster"
+            description="Articles are converted into 384-dim vectors with MiniLM-L6-v2 and grouped into clusters using scikit-learn's K-Means."
+            detail="Clustering groups semantically similar stories into 'Trending Topics'. Topics are dynamically labeled by looking at the most frequent entities inside each cluster."
+          />
+          <StepArrow />
+          <PipelineStep
+            number={5}
             icon={<Database className="h-5 w-5" />}
             title="Store in PostgreSQL + pgvector"
-            description="Normalized embeddings are stored alongside article metadata in PostgreSQL using the pgvector extension with an HNSW index for fast cosine similarity search."
-            detail="pgvector handles both storage and search in a single system. The HNSW index provides sub-millisecond approximate nearest-neighbor search that scales to millions of vectors."
+            description="Normalized embeddings and topic associations are stored in PostgreSQL using the pgvector extension with an HNSW index."
+            detail="The system supports both vector searching (for queries) and relational filtering (for topic chips), combined into a single performant pipeline."
           />
         </div>
       </div>
@@ -92,19 +100,15 @@ export function HowItWorks() {
               icon={<Zap className="h-4 w-4" />}
               name="Time Decay"
               weight="20%"
-              description="Exponential freshness score: 2^(-hours / 48). A 24h-old article scores ~0.71, 48h → 0.50, 1 week → 0.04. Rewards recent news."
+              description="Exponential freshness score: 2^(-hours / 48). Rewards recent news while slightly penalizing older evergreen content."
             />
             <SignalRow
               icon={<BarChart3 className="h-4 w-4" />}
               name="Keyword Density"
               weight="30%"
-              description="Ratio of distinct AI keywords found in the article. Gives a bonus to articles deeply focused on AI topics."
+              description="Ratio of distinct AI keywords found in the article. Gives a bonus to articles deeply focused on specialist AI topics."
             />
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Pure semantic search favors evergreen content. Pure recency ignores relevance.
-            The weighted blend rewards articles that are both relevant and fresh.
-          </p>
         </div>
       </div>
 
@@ -115,6 +119,8 @@ export function HowItWorks() {
           Tech Stack
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
+          <TechItem label="NER" value="spaCy (en_core_web_sm)" />
+          <TechItem label="Clustering" value="scikit-learn (K-Means)" />
           <TechItem label="Embeddings" value="sentence-transformers (MiniLM-L6-v2, 384-dim)" />
           <TechItem label="Vector Search" value="PostgreSQL + pgvector (HNSW cosine index)" />
           <TechItem label="RSS Parsing" value="feedparser + newspaper3k" />
@@ -135,9 +141,20 @@ export function HowItWorks() {
           <div className="flex flex-col items-center gap-3 text-sm">
             <ArchBlock icon={<Globe />} label={`${feedCount} RSS Feeds`} sub="feedparser + newspaper3k" />
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
-            <ArchBlock icon={<Filter />} label="AI Keyword Filter" sub="~50 terms, ~70% pass rate" />
-            <ArrowDown className="h-4 w-4 text-muted-foreground" />
-            <ArchBlock icon={<Brain />} label="Sentence Embeddings" sub="MiniLM-L6-v2, 384-dim vectors" />
+            <div className="flex w-full max-w-md gap-3">
+               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
+                 <Filter className="mx-auto mb-1 h-3 w-3" />
+                 AI Keyword Filter
+               </div>
+               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
+                 <Zap className="mx-auto mb-1 h-3 w-3" />
+                 NER Extraction
+               </div>
+               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
+                 <Brain className="mx-auto mb-1 h-3 w-3" />
+                 K-Means Clustering
+               </div>
+            </div>
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
             <ArchBlock icon={<Database />} label="PostgreSQL + pgvector" sub="HNSW index, cosine similarity" />
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
@@ -145,12 +162,12 @@ export function HowItWorks() {
               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-3 text-center">
                 <Search className="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
                 <p className="text-xs font-medium">Composite Ranker</p>
-                <p className="text-xs text-muted-foreground">semantic + time + keyword</p>
+                <p className="text-xs text-muted-foreground">semantic + filter</p>
               </div>
               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-3 text-center">
                 <FileText className="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
                 <p className="text-xs font-medium">Summarizer</p>
-                <p className="text-xs text-muted-foreground">DistilBART, on-demand</p>
+                <p className="text-xs text-muted-foreground">DistilBART</p>
               </div>
             </div>
           </div>

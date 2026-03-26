@@ -3,8 +3,26 @@ import useSWRMutation from 'swr/mutation'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+export interface EntityResult {
+  name: string
+  label: string
+  count: number
+}
+
+export interface TopicClusterItem {
+  id: number
+  label: string
+  summary: string | null
+  article_count: number
+}
+
+export interface TopicsResponse {
+  topics: TopicClusterItem[]
+}
+
 // Matches the FastAPI backend response field names exactly
-interface Article {
+export interface Article {
+  id: number
   title: string
   link: string
   source: string
@@ -14,15 +32,17 @@ interface Article {
   semantic_score?: number
   time_score?: number
   relevance_score?: number
+  cluster_id?: number | null
+  entities?: EntityResult[]
 }
 
-interface SearchResponse {
+export interface SearchResponse {
   query: string
   total_results: number
   results: Article[]
 }
 
-interface HealthResponse {
+export interface HealthResponse {
   api_status: string
   index_loaded: boolean
   articles_count: number
@@ -55,7 +75,7 @@ interface HealthResponse {
   } | null
 }
 
-interface SummarizeResponse {
+export interface SummarizeResponse {
   summary: string
 }
 
@@ -65,7 +85,7 @@ const fetcher = async (url: string) => {
   return res.json()
 }
 
-const searchFetcher = async (url: string, { arg }: { arg: { query: string; top_k?: number } }) => {
+const searchFetcher = async (url: string, { arg }: { arg: { query: string; top_k?: number; cluster_id?: number } }) => {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -97,8 +117,14 @@ export function useHealth() {
   })
 }
 
+export function useTopics() {
+  return useSWR<TopicsResponse>(`${API_BASE}/topics`, fetcher, {
+    refreshInterval: 30000, // Refresh every 30s
+  })
+}
+
 export function useSearch() {
-  return useSWRMutation<SearchResponse, Error, string, { query: string; top_k?: number }>(
+  return useSWRMutation<SearchResponse, Error, string, { query: string; top_k?: number; cluster_id?: number }>(
     `${API_BASE}/search`,
     searchFetcher
   )
@@ -114,5 +140,3 @@ export function useSummarize() {
 export function usePipelineRun() {
   return useSWRMutation(`${API_BASE}/pipeline/run`, pipelineFetcher)
 }
-
-export type { Article, SearchResponse, HealthResponse, SummarizeResponse }

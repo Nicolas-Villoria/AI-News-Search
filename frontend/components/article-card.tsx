@@ -20,7 +20,7 @@ export function ArticleCard({ article, index }: ArticleCardProps) {
       setExpanded(!expanded)
       return
     }
-    
+
     if (article.text) {
       try {
         const result = await summarize({ text: article.text, title: article.title })
@@ -37,7 +37,7 @@ export function ArticleCard({ article, index }: ArticleCardProps) {
     : null
 
   return (
-    <article 
+    <article
       className="group border-b border-border py-6 transition-colors first:pt-0 last:border-0"
       style={{ animationDelay: `${index * 50}ms` }}
     >
@@ -53,14 +53,8 @@ export function ArticleCard({ article, index }: ArticleCardProps) {
                 <span className="font-medium text-foreground/70">{article.source}</span>
               </>
             )}
-            {article.relevance_score !== undefined && (
-              <>
-                <span className="text-border">·</span>
-                <span className="text-accent">{Math.round(article.relevance_score * 100)}% match</span>
-              </>
-            )}
           </div>
-          
+
           <h3 className="mb-2 font-serif text-xl leading-snug text-foreground transition-colors group-hover:text-accent md:text-2xl">
             <a
               href={article.link}
@@ -93,6 +87,19 @@ export function ArticleCard({ article, index }: ArticleCardProps) {
           {expanded && summary && (
             <div className="mt-3 rounded-lg bg-secondary/50 p-4 text-sm leading-relaxed text-foreground/80">
               {summary}
+            </div>
+          )}
+
+          {article.entities && article.entities.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {article.entities.map((ent, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-[0.65rem] font-medium tracking-wide text-accent uppercase"
+                >
+                  {ent.name}
+                </span>
+              ))}
             </div>
           )}
         </div>

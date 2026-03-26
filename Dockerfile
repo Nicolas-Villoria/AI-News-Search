@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Pre-download ML models during build so startup is fast
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 RUN python -c "from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; AutoTokenizer.from_pretrained('sshleifer/distilbart-cnn-12-6'); AutoModelForSeq2SeqLM.from_pretrained('sshleifer/distilbart-cnn-12-6')"
+RUN python -m spacy download en_core_web_sm
 
 COPY backend/ ./
 

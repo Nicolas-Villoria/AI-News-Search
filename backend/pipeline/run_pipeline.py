@@ -19,6 +19,7 @@ from db.models import Article, PipelineRun
 from crawler.rss_crawler import crawl_all_feeds
 from filter.ai_filter import filter_articles
 from indexer.build_index import embed_and_store_articles
+from engine.topic_engine import cluster_recent_articles
 from config.settings import MAX_ARTICLE_AGE_DAYS, MAX_ARTICLE_RETENTION_DAYS
 from utils.helpers import get_logger
 
@@ -68,15 +69,24 @@ def _save_pipeline_run(db, stats: dict) -> None:
 
 def _garbage_collect(db, retention_days: int = MAX_ARTICLE_RETENTION_DAYS) -> int:
     """Delete articles (and their entities) older than *retention_days* (90).
+    Also cleans up orphaned TopicClusters.
 
     Returns the number of deleted rows.
     """
+    from db.models import TopicCluster
+
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
     deleted = (
         db.query(Article)
         .filter(Article.created_at < cutoff)
         .delete(synchronize_session="fetch")
     )
+    
+    # Clean up empty topic clusters
+    db.query(TopicCluster).filter(
+        TopicCluster.id.not_in(select(Article.cluster_id).where(Article.cluster_id.is_not(None)))
+    ).delete(synchronize_session=False)
+
     db.commit()
     return deleted
 
@@ -182,6 +192,12 @@ def run_pipeline() -> dict:
             round(index_time / len(ai_articles), 4) if ai_articles else 0.0
         )
         logger.info(f"Embedded {len(ai_articles)} articles in {index_time:.1f}s\n")
+
+        # Re-cluster into topics
+        if db is not None:
+            t0_cluster = time.time()
+            cluster_recent_articles(db)
+            stats["index"]["cluster_seconds"] = round(time.time() - t0_cluster, 2)
 
         source_counts = Counter(a["source"] for a in ai_articles)
         total = len(ai_articles)
