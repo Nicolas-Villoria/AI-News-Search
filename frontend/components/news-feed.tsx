@@ -84,9 +84,6 @@ export function NewsFeed() {
                   <button
                     onClick={() => {
                       setHasSearched(false)
-                      setArticles([])
-                      setLastQuery('')
-                      setSelectedTopic(null)
                     }}
                     className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
