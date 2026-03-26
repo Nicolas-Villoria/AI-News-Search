@@ -1,13 +1,13 @@
 'use client'
 
 const SUGGESTED_TOPICS = [
-  'AI',
+  'LLM',
   'Machine Learning',
   'Robotics',
   'AI Ethics',
   'AI Infrastructure',
   'Computer Vision',
-  'Natural Language Processing'
+  'Agentic AI'
 ]
 
 interface QuickFiltersProps {

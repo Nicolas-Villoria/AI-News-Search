@@ -43,7 +43,7 @@ export function HowItWorks() {
             icon={<Rss className="h-5 w-5" />}
             title="Crawl RSS Feeds"
             description={`Fetches articles from ${feedCount} curated RSS feeds spanning research labs (OpenAI, DeepMind, Meta AI), developer blogs (Hugging Face, PyTorch), AI newsletters, and tech publications (TechCrunch, MIT News, Wired).`}
-            detail="Each feed is parsed with feedparser, then full article text is extracted using newspaper3k with 8 parallel workers. Articles older than 7 days are dropped before extraction to save bandwidth."
+            detail="Each feed is parsed with feedparser, then full article text is extracted using newspaper3k with 8 parallel workers. Articles older than 7 days and those that have been crawled in previous runs are dropped before extraction to save bandwidth."
           />
           <StepArrow />
           <PipelineStep
@@ -142,18 +142,18 @@ export function HowItWorks() {
             <ArchBlock icon={<Globe />} label={`${feedCount} RSS Feeds`} sub="feedparser + newspaper3k" />
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
             <div className="flex w-full max-w-md gap-3">
-               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
-                 <Filter className="mx-auto mb-1 h-3 w-3" />
-                 AI Keyword Filter
-               </div>
-               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
-                 <Zap className="mx-auto mb-1 h-3 w-3" />
-                 NER Extraction
-               </div>
-               <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
-                 <Brain className="mx-auto mb-1 h-3 w-3" />
-                 K-Means Clustering
-               </div>
+              <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
+                <Filter className="mx-auto mb-1 h-3 w-3" />
+                AI Keyword Filter
+              </div>
+              <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
+                <Zap className="mx-auto mb-1 h-3 w-3" />
+                NER Extraction
+              </div>
+              <div className="flex-1 rounded-lg border border-border bg-secondary/30 p-2 text-center text-[10px]">
+                <Brain className="mx-auto mb-1 h-3 w-3" />
+                K-Means Clustering
+              </div>
             </div>
             <ArrowDown className="h-4 w-4 text-muted-foreground" />
             <ArchBlock icon={<Database />} label="PostgreSQL + pgvector" sub="HNSW index, cosine similarity" />

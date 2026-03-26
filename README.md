@@ -1,136 +1,49 @@
-# AI News Search (Hawker)
+# Hawker
 
-An AI-powered news aggregation and search system that crawls tech news from RSS feeds, filters for AI-related content, ranks articles using a composite scoring formula (semantic similarity + freshness + keyword density), and generates summaries with DistilBART.
+Hawker is an AI-powered news aggregator and search engine. It automatically crawls tech RSS feeds, filters for AI-related content, embeds articles into vector space, and ranks search results using a composite formula of semantic similarity, exponential time decay, and keyword density.
 
----
+## Core Features
 
-## What It Does
+- **Semantic Search**: Find articles based on meaning rather than exact keyword matches.
+- **Dynamic Topic Clustering**: Automatically groups recent news into distinct trending topics without relying on predefined categories.
+- **Named Entity Extraction**: Identifies and tags key organizations, people, and products in every story.
+- **On-Demand Summarization**: Generates abstractive summaries of long-form articles instantly using a transformer model.
 
-1. **Crawls** ~200 articles from 25+ curated RSS feeds (OpenAI, DeepMind, TechCrunch, etc.)
-2. **Filters** down to AI-related articles using keyword matching (~70% pass rate)
-3. **Extracts Entities (NER)** using **spaCy** to identify People, Organizations, and GPEs
-4. **Embeds** article text with Sentence-Transformers (`all-MiniLM-L6-v2`)
-5. **Clusters** articles using **K-Means (scikit-learn)** to discover trending topics
-6. **Indexes** in **PostgreSQL + pgvector** using HNSW for fast semantic search
-7. **Ranks** results using a weighted composite of semantic similarity, time decay, and keyword density
-8. **Summarizes** articles on demand with **DistilBART**
+## Technologies and Libraries
 
----
-
-## Architecture
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  RSS Crawl  │ →  │  AI Filter  │ →  │  NER Extr.  │ →  │  Cluster    │
-│  25+ feeds  │    │  keywords   │    │  spaCy      │    │  K-Means    │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-                                                                ↓
-                    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-   User query  →    │  Ranker     │ ←  │  Postgres   │ ←  │  Embed      │
-                    │  pgvector   │    │  + pgvector │    │  MiniLM     │
-                    └─────────────┘    └─────────────┘    └─────────────┘
-                           ↓
-                    ┌─────────────┐
-                    │  Summarizar │
-                    │  DistilBART  │
-                    └─────────────┘
-```
-
----
-
-## Ranking Formula
-
-Articles are ranked using a weighted composite score:
-```
-score = w_semantic × cosine_sim + w_time × time_decay + w_keyword × keyword_score
-```
-
-| Signal | Weight | Description |
-|---|---|---|
-| **Semantic similarity** | 0.50 | Cosine similarity between query and article embeddings |
-| **Time decay** | 0.20 | Exponential freshness: `2^(−hours / 48)` |
-| **Keyword density** | 0.30 | Ratio of distinct AI keywords found in the article |
-
----
+- **[pgvector](https://github.com/pgvector/pgvector)**: An open-source vector similarity search for Postgres. It handles both embedding storage and fast approximate nearest-neighbor search through HNSW indices.
+- **[Sentence-Transformers](https://sbert.net/)**: Specifically the `all-MiniLM-L6-v2` model, used to efficiently generate 384-dimensional dense semantic vectors. 
+- **[spaCy](https://spacy.io/)**: An industrial-strength NLP library used for Named Entity Recognition (NER) to surface people, organizations, and products within the articles.
+- **[scikit-learn](https://scikit-learn.org/)**: The K-Means clustering implementation used to dynamically group articles with similar semantic vectors into trending topics.
+- **[feedparser](https://github.com/kurtmckee/feedparser)** and **[newspaper3k](https://github.com/codelucas/newspaper)**: A dependable pairing for scraping RSS feeds and extracting clean article body text from raw HTML.
+- **[SWR](https://swr.vercel.app/)**: Next.js data fetching state management used in the frontend for robust search querying, request deduplication, and triggering initial chronological data loads on component mount.
+- **Typography**: The frontend UI utilizes **[Inter](https://fonts.google.com/specimen/Inter)** for clean sans-serif UI elements and **[Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif)** for an elegant, editorial feel on article titles.
 
 ## Project Structure
 
+```text
+.
+├── backend
+│   ├── api
+│   ├── config
+│   ├── crawler
+│   ├── db
+│   ├── engine
+│   ├── filter
+│   ├── indexer
+│   └── pipeline
+├── docs
+├── frontend
+│   ├── app
+│   ├── components
+│   ├── hooks
+│   └── lib
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── README.md
 ```
-AI News Search/
-├── backend/
-│   ├── api/                 # FastAPI routes + Pydantic models
-│   ├── crawler/             # RSS fetching + full-text extraction
-│   ├── db/                  # SQLAlchemy models + migrations (pgvector)
-│   ├── engine/              # Ranking logic + Summarization
-│   ├── filter/              # AI keyword filtering
-│   ├── indexer/             # Embedding logic
-│   └── pipeline/            # End-to-end orchestrator
-├── frontend/                # Next.js 15 app (Tailwind, Radix, SWR)
-├── Dockerfile               # Backend production build (pre-downloads models)
-├── docker-compose.yml       # Local dev environment (pgvector container)
-└── requirements.txt         # Backend Python dependencies
-```
 
----
-
-## Quick Start (Local Dev)
-
-1. **Clone and enter the project**
-   ```bash
-   git clone <repo-url>
-   cd AI-News-Search
-   ```
-
-2. **Start the Database**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Backend Setup**
-   ```bash
-   cd backend
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -r ../requirements.txt
-   # Run the pipeline to populate the DB
-   python -m pipeline.run_pipeline
-   # Start the API
-   uvicorn api.main:app --reload
-   ```
-
-4. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
----
-
-## Deployment Recommendations
-
-### Backend (Hosting Alternatives)
-
-If you lack Railway credit, these are the best options for ML-intensive Python backends:
-
-1. **Hugging Face Spaces (Docker):** **Highly Recommended.**
-   - Free CPU tier has **16GB RAM**, perfect for Torch + Transformers.
-   - Use the provided `Dockerfile` (pre-downloads models for fast startup).
-2. **Oracle Cloud "Always Free":** Most powerful free tier (24GB RAM).
-3. **Google Cloud Run:** Use the $300 trial credit; perfect for containerized APIs.
-
-### Frontend
-
-- **Vercel:** Optimized for Next.js. Set `NEXT_PUBLIC_API_URL` to your backend URL.
-
----
-
-## Production Hardening
-
-The following fixes have been implemented for production readiness:
-- **CORS Restricted:** Lock to specific domains via `ALLOWED_ORIGINS` env var.
-- **Protected Pipeline:** `/pipeline/run` requires `X-API-Key` header.
-- **Model Caching:** Singleton pattern avoids reloading 1GB of models in RAM.
-- **Pre-downloaded Models:** Docker build downloads ML weights to avoid startup latency.
-- **Typed API:** Full Pydantic `ArticleResult` models for OpenAPI documentation.
-- **Health Checks:** Lightweight `/ping` endpoint for load balancers.
+- [backend/engine](/backend/engine): Contains the core intelligence logic. This includes the ranking engines pushing math down to Postgres, the `spaCy` NER extraction, and the `scikit-learn` K-Means topic clustering. 
+- [backend/pipeline](/backend/pipeline): The orchestrator scripts that crawl feeds, process text, generate embeddings, and clean up orphaned clusters sequentially.
+- [frontend/components](/frontend/components): The React building blocks, housing the interactive trending topic chips and the entity-tagged article cards.
