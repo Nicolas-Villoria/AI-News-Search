@@ -24,9 +24,24 @@ def init_db() -> None:
     logger.info("pgvector extension enabled")
     Base.metadata.create_all(bind=engine)
     logger.info("All tables created successfully")
+    
     with engine.connect() as conn:
         for tbl in _APP_TABLES:
-            conn.execute(text(f'ALTER TABLE public."{tbl}" ENABLE ROW LEVEL SECURITY'))
+            # Check if RLS is already enabled for this table to avoid redundant ALTER TABLE calls
+            # which require an ACCESS EXCLUSIVE lock and can cause timeouts.
+            check_rls_sql = text(f"""
+                SELECT relrowsecurity FROM pg_class 
+                WHERE oid = 'public."{tbl}"'::regclass;
+            """)
+            try:
+                rls_enabled = conn.execute(check_rls_sql).scalar()
+                if not rls_enabled:
+                    logger.info(f"Enabling Row Level Security for table '{tbl}'...")
+                    conn.execute(text(f'ALTER TABLE public."{tbl}" ENABLE ROW LEVEL SECURITY'))
+                else:
+                    logger.debug(f"Row Level Security already enabled for table '{tbl}'")
+            except Exception as e:
+                logger.warning(f"Could not check or enable RLS for table '{tbl}': {e}")
         conn.commit()
 
 

@@ -135,7 +135,7 @@ def cluster_recent_articles(db: Session, n_clusters: int = 8):
     
     # 3. Wipe old TopicClusters and create new ones
     # (Because K-means regenerates completely new groupings)
-    # Note: If we had a persistent "Trend" tracking, we'd use incremental clustering
+    db.query(Article).update({"cluster_id": None})
     db.query(TopicCluster).delete()
     db.commit()
     

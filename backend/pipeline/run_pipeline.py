@@ -40,7 +40,7 @@ def _get_db_session():
         db.connection()
         return db
     except Exception as e:
-        logger.warning(f"Database unavailable: {e}")
+        logger.error(f"Database initialization or connection failed: {e}")
         return None
 
 
@@ -182,7 +182,8 @@ def run_pipeline() -> dict:
             stats["index"]["db_inserted"] = n_stored
             logger.info(f"Stored {n_stored} articles in PostgreSQL")
         else:
-            logger.warning("No database connection — articles were not persisted")
+            logger.error("No database connection — articles were not persisted")
+            raise RuntimeError("Database connection failed during ingestion")
 
         index_time = time.time() - t0
 
