@@ -1,0 +1,212 @@
+[
+  {
+    "id": "ai_001",
+    "title": "OpenAI launches a new multimodal reasoning model",
+    "text": "The company introduced a model that improves long-context reasoning and tool use across text and image tasks.",
+    "expected_is_ai_related": true,
+    "category": "model_release"
+  },
+  {
+    "id": "ai_002",
+    "title": "NVIDIA announces Blackwell GPU platform for AI training",
+    "text": "The new platform targets large-scale AI training and inference workloads in enterprise datacenters.",
+    "expected_is_ai_related": true,
+    "category": "ai_infra"
+  },
+  {
+    "id": "ai_003",
+    "title": "Researchers publish a benchmark for retrieval augmented generation",
+    "text": "The paper compares retrieval strategies, embedding models, and context window allocation for RAG systems.",
+    "expected_is_ai_related": true,
+    "category": "research"
+  },
+  {
+    "id": "ai_004",
+    "title": "EU proposes new rules for frontier AI models",
+    "text": "The proposal introduces transparency and safety obligations for providers of advanced general-purpose AI systems.",
+    "expected_is_ai_related": true,
+    "category": "policy"
+  },
+  {
+    "id": "ai_005",
+    "title": "Startup raises funding to build autonomous warehouse robots",
+    "text": "Its robotics stack combines computer vision and reinforcement learning for real-time navigation.",
+    "expected_is_ai_related": true,
+    "category": "robotics"
+  },
+  {
+    "id": "ai_006",
+    "title": "New open-source library improves transformer inference latency",
+    "text": "The release includes optimized kernels and quantization support for LLM serving.",
+    "expected_is_ai_related": true,
+    "category": "tooling"
+  },
+  {
+    "id": "ai_007",
+    "title": "Google DeepMind shares progress on agentic planning",
+    "text": "The team describes a multi-agent architecture that can decompose tasks and invoke external tools.",
+    "expected_is_ai_related": true,
+    "category": "agents"
+  },
+  {
+    "id": "ai_008",
+    "title": "Microsoft adds copilots to enterprise workflows",
+    "text": "The update embeds generative AI assistants into customer support and document operations.",
+    "expected_is_ai_related": true,
+    "category": "enterprise_ai"
+  },
+  {
+    "id": "ai_009",
+    "title": "Anthropic publishes an alignment and safety report",
+    "text": "The report details evaluations on harmful content, jailbreak robustness, and model oversight.",
+    "expected_is_ai_related": true,
+    "category": "safety"
+  },
+  {
+    "id": "ai_010",
+    "title": "Mistral releases a compact open model for edge deployment",
+    "text": "The model targets low-latency inference and local deployment on constrained hardware.",
+    "expected_is_ai_related": true,
+    "category": "model_release"
+  },
+  {
+    "id": "ai_011",
+    "title": "arXiv paper introduces a new state space sequence model",
+    "text": "The method is presented as an alternative to transformers for long-context language modeling.",
+    "expected_is_ai_related": true,
+    "category": "research"
+  },
+  {
+    "id": "ai_012",
+    "title": "Company open-sources a speech recognition foundation model",
+    "text": "The release includes checkpoints and training recipes for multilingual automatic speech recognition.",
+    "expected_is_ai_related": true,
+    "category": "model_release"
+  },
+  {
+    "id": "non_ai_001",
+    "title": "Apple unveils a thinner iPad with OLED display",
+    "text": "The announcement focused on battery life, screen brightness, and accessory updates.",
+    "expected_is_ai_related": false,
+    "category": "consumer_tech"
+  },
+  {
+    "id": "non_ai_002",
+    "title": "Cloud provider reports quarterly revenue growth",
+    "text": "Executives highlighted regional expansion and currency headwinds in the earnings call.",
+    "expected_is_ai_related": false,
+    "category": "business"
+  },
+  {
+    "id": "non_ai_003",
+    "title": "Mozilla ships a major Firefox privacy update",
+    "text": "The release blocks third-party trackers and introduces stricter cookie isolation defaults.",
+    "expected_is_ai_related": false,
+    "category": "software"
+  },
+  {
+    "id": "non_ai_004",
+    "title": "New semiconductor process cuts power consumption by 20 percent",
+    "text": "The fabrication update targets mobile SoCs and gaming devices rather than datacenter accelerators.",
+    "expected_is_ai_related": false,
+    "category": "hardware"
+  },
+  {
+    "id": "non_ai_005",
+    "title": "Space agency schedules next lunar mission",
+    "text": "Mission planning focuses on launch windows, communications, and propulsion testing.",
+    "expected_is_ai_related": false,
+    "category": "science"
+  },
+  {
+    "id": "non_ai_006",
+    "title": "Linux kernel 6.x released with filesystem improvements",
+    "text": "Developers merged scheduler refinements, network updates, and hardware compatibility fixes.",
+    "expected_is_ai_related": false,
+    "category": "open_source"
+  },
+  {
+    "id": "non_ai_007",
+    "title": "Startup launches collaborative whiteboard for remote teams",
+    "text": "The app adds real-time cursors, templates, and meeting notes export.",
+    "expected_is_ai_related": false,
+    "category": "saas"
+  },
+  {
+    "id": "non_ai_008",
+    "title": "Major game studio delays next RPG title",
+    "text": "The studio cited production timeline adjustments and QA feedback.",
+    "expected_is_ai_related": false,
+    "category": "gaming"
+  },
+  {
+    "id": "non_ai_009",
+    "title": "Cybersecurity agency warns about router firmware flaws",
+    "text": "The advisory recommends urgent patching and credential rotation for affected devices.",
+    "expected_is_ai_related": false,
+    "category": "security"
+  },
+  {
+    "id": "non_ai_010",
+    "title": "Browser startup explores better tab management",
+    "text": "The team proposes new workspace shortcuts and faster search across browsing history.",
+    "expected_is_ai_related": false,
+    "category": "productivity"
+  },
+  {
+    "id": "non_ai_011",
+    "title": "Datacenter operator opens a new region in Madrid",
+    "text": "The expansion increases cloud capacity for storage, networking, and backup services.",
+    "expected_is_ai_related": false,
+    "category": "cloud"
+  },
+  {
+    "id": "non_ai_012",
+    "title": "Social platform redesigns its short-video feed",
+    "text": "The update changes recommendation controls and creator monetization settings.",
+    "expected_is_ai_related": false,
+    "category": "social"
+  },
+  {
+    "id": "edge_001",
+    "title": "Phone maker adds AI photo mode to flagship camera app",
+    "text": "Most of the launch focused on camera sensors and lens hardware, with limited details on the software model.",
+    "expected_is_ai_related": false,
+    "category": "edge_case"
+  },
+  {
+    "id": "edge_002",
+    "title": "Bank pilots chatbot for internal HR support",
+    "text": "The project uses retrieval and prompt templates, but current usage is narrow and mostly FAQ automation.",
+    "expected_is_ai_related": true,
+    "category": "edge_case"
+  },
+  {
+    "id": "edge_003",
+    "title": "Cloud vendor announces new inference endpoint pricing",
+    "text": "The service supports text-generation models and lower-latency deployment for production AI APIs.",
+    "expected_is_ai_related": true,
+    "category": "edge_case"
+  },
+  {
+    "id": "edge_004",
+    "title": "Company says AI in one sentence during earnings call",
+    "text": "The rest of the call focused on logistics costs, hiring, and regional sales performance.",
+    "expected_is_ai_related": false,
+    "category": "edge_case"
+  },
+  {
+    "id": "edge_005",
+    "title": "University course teaches machine learning for biologists",
+    "text": "The curriculum includes supervised learning, evaluation metrics, and practical model training labs.",
+    "expected_is_ai_related": true,
+    "category": "edge_case"
+  },
+  {
+    "id": "edge_006",
+    "title": "Chip firm introduces accelerator for simulation workloads",
+    "text": "The press note avoids direct AI claims and highlights generic compute performance.",
+    "expected_is_ai_related": false,
+    "category": "edge_case"
+  }
+]

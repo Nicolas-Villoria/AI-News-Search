@@ -57,8 +57,15 @@ AI_KEYWORDS = [
     "prompt engineering", "multimodal", "ai chip", "nvidia",
     "speech recognition", "text-to-image", "ai startup", "ai research",
     "ai breakthrough", "ai innovation", "ai application", "openclaw", 
-    "moltbook", "deepseek", "ai news", "ai trends", "ai development",
+    "moltbook", "deepseek", "ai news", "ai trends", "ai development", "AI", 
+    "ai", "agi", "artificial general intelligence", "superintelligence"
 ]
+
+# LLM fallback for borderline articles
+# Limits OpenRouter calls per pipeline run and requires a minimum confidence
+# when accepting a positive AI-related classification.
+LLM_FALLBACK_MAX_CALLS = int(os.environ.get("LLM_FALLBACK_MAX_CALLS", "50"))
+LLM_FALLBACK_MIN_CONFIDENCE = float(os.environ.get("LLM_FALLBACK_MIN_CONFIDENCE", "0.6"))
 
 # Embedding Model 
 # MiniLM is tiny (~80 MB), fast, and produces quality 384-dim embeddings.

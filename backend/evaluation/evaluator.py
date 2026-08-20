@@ -7,6 +7,7 @@ study comparing the full composite ranker against each individual
 signal (semantic-only, time-only, keyword-only).
 """
 
+import argparse
 import json
 from pathlib import Path
 
@@ -17,10 +18,12 @@ from sqlalchemy.orm import Session
 from engine.ranker import search_db
 from config.settings import RANKING_WEIGHTS
 from utils.helpers import get_logger
+from filter.ai_filter import filter_articles, compute_keyword_score
 
 logger = get_logger(__name__)
 
 GOLDEN_SET_PATH = Path(__file__).parent / "golden_set.json"
+FILTER_GOLDEN_SET_PATH = Path(__file__).parent / "filter_golden_set.json"
 
 ABLATION_CONFIGS = {
     "composite": RANKING_WEIGHTS,
@@ -32,6 +35,11 @@ ABLATION_CONFIGS = {
 
 def load_golden_set() -> list[dict]:
     with open(GOLDEN_SET_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_filter_golden_set() -> list[dict]:
+    with open(FILTER_GOLDEN_SET_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -161,23 +169,144 @@ def run_ablation(
     return results
 
 
+def _compute_binary_metrics(tp: int, fp: int, tn: int, fn: int) -> dict:
+    total = tp + fp + tn + fn
+    accuracy = (tp + tn) / total if total else 0.0
+    precision = tp / (tp + fp) if (tp + fp) else 0.0
+    recall = tp / (tp + fn) if (tp + fn) else 0.0
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+    return {
+        "accuracy": round(accuracy, 4),
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "f1": round(f1, 4),
+    }
+
+
+def evaluate_ai_filter(
+    threshold: float = 0.1,
+    use_llm_fallback: bool = False,
+) -> dict:
+    """Evaluate AI theme filtering against a labeled golden set."""
+    golden_set = load_filter_golden_set()
+    per_example = []
+
+    tp = fp = tn = fn = 0
+    total_llm_calls = 0
+    total_llm_kept = 0
+    total_llm_capped = 0
+
+    for item in golden_set:
+        article = {
+            "title": item.get("title", ""),
+            "text": item.get("text", ""),
+        }
+        expected = bool(item.get("expected_is_ai_related", False))
+        keyword_score = round(compute_keyword_score(f"{article['title']} {article['text']}"), 4)
+
+        if use_llm_fallback:
+            kept, stats = filter_articles([article], threshold=threshold, return_stats=True)
+            predicted = len(kept) == 1
+            total_llm_calls += int(stats.get("llm_fallback_called", 0))
+            total_llm_kept += int(stats.get("llm_fallback_kept", 0))
+            total_llm_capped += int(stats.get("llm_fallback_skipped_capped", 0))
+        else:
+            predicted = keyword_score >= threshold
+
+        if expected and predicted:
+            tp += 1
+        elif not expected and predicted:
+            fp += 1
+        elif not expected and not predicted:
+            tn += 1
+        else:
+            fn += 1
+
+        per_example.append(
+            {
+                "id": item.get("id"),
+                "category": item.get("category", ""),
+                "expected_is_ai_related": expected,
+                "predicted_is_ai_related": predicted,
+                "keyword_score": keyword_score,
+                "title": item.get("title", ""),
+            }
+        )
+
+    metrics = _compute_binary_metrics(tp, fp, tn, fn)
+    return {
+        "threshold": threshold,
+        "use_llm_fallback": use_llm_fallback,
+        "num_examples": len(golden_set),
+        "confusion_matrix": {"tp": tp, "fp": fp, "tn": tn, "fn": fn},
+        "metrics": metrics,
+        "llm_fallback_stats": {
+            "called": total_llm_calls,
+            "kept": total_llm_kept,
+            "skipped_capped": total_llm_capped,
+        },
+        "per_example": per_example,
+    }
+
+
 # CLI entry point
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run search and filter evaluations.")
+    parser.add_argument(
+        "--mode",
+        choices=["search", "filter", "all"],
+        default="all",
+        help="Evaluation mode to run.",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.1,
+        help="Keyword threshold for filter evaluation.",
+    )
+    parser.add_argument(
+        "--use-llm-fallback",
+        action="store_true",
+        help="Use full filter path with LLM fallback in filter evaluation.",
+    )
+    args = parser.parse_args()
+
     from db.database import SessionLocal
     from indexer.build_index import load_embedding_model
 
-    db = SessionLocal()
-    model = load_embedding_model()
+    if args.mode in {"search", "all"}:
+        db = SessionLocal()
+        model = load_embedding_model()
+        print("Running search ablation study...\n")
+        ablation = run_ablation(db, model)
+        print(f"\n{'='*60}")
+        print(f"  {'Config':<20s} {'MRR':>8s} {'P@5':>8s}")
+        print(f"{'='*60}")
+        for name, result in ablation.items():
+            print(f"  {name:<20s} {result['mean_mrr']:>8.3f} {result['mean_precision_at_5']:>8.3f}")
+        print(f"{'='*60}")
+        db.close()
 
-    print("Running ablation study...\n")
-    ablation = run_ablation(db, model)
-
-    print(f"\n{'='*60}")
-    print(f"  {'Config':<20s} {'MRR':>8s} {'P@5':>8s}")
-    print(f"{'='*60}")
-    for name, result in ablation.items():
-        print(f"  {name:<20s} {result['mean_mrr']:>8.3f} {result['mean_precision_at_5']:>8.3f}")
-    print(f"{'='*60}")
-
-    db.close()
+    if args.mode in {"filter", "all"}:
+        print("\nRunning AI theme filter evaluation...\n")
+        filter_eval = evaluate_ai_filter(
+            threshold=args.threshold,
+            use_llm_fallback=args.use_llm_fallback,
+        )
+        cm = filter_eval["confusion_matrix"]
+        m = filter_eval["metrics"]
+        print(f"  Examples:   {filter_eval['num_examples']}")
+        print(f"  Threshold:  {filter_eval['threshold']}")
+        print(f"  LLM fallback enabled: {filter_eval['use_llm_fallback']}")
+        print(f"  TP/FP/TN/FN: {cm['tp']}/{cm['fp']}/{cm['tn']}/{cm['fn']}")
+        print(
+            f"  Accuracy: {m['accuracy']:.3f}  Precision: {m['precision']:.3f}  "
+            f"Recall: {m['recall']:.3f}  F1: {m['f1']:.3f}"
+        )
+        if filter_eval["use_llm_fallback"]:
+            llm = filter_eval["llm_fallback_stats"]
+            print(
+                f"  LLM fallback calls/kept/capped: "
+                f"{llm['called']}/{llm['kept']}/{llm['skipped_capped']}"
+            )
